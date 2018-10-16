@@ -7,3 +7,5 @@ The goals of the project area:
 2. Implement multiparallel reading
 3. Migrate to use cats or scalaz
 4. Create a functional stream (fs) library for reading SAS files
+
+The project borrows heavily from the java parso library and the [spark sas splittable library](https://github.com/saurfang/spark-sas7bdat)
