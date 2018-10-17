@@ -2,8 +2,9 @@ package com.kaszub.parso
 
 import java.io.File
 
-import scala.io.{BufferedSource, Source}
 import com.typesafe.scalalogging.Logger
+
+import scala.io.Source
 
 object TestUtils {
   private val logger = Logger[this.type]
