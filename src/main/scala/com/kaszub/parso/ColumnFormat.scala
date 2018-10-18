@@ -3,9 +3,9 @@ package com.kaszub.parso
 /**
   * Class used to store SAS Column Metadata.
   *
-  * @param name      - column format name.
-  * @param width     - column format width.
-  * @param precision - column format precision.
+  * @param name      column format name.
+  * @param width     column format width.
+  * @param precision column format precision.
   */
 case class ColumnFormat(name: String, width: Int, precision: Int) {
 
@@ -14,7 +14,7 @@ case class ColumnFormat(name: String, width: Int, precision: Int) {
     *
     * @return true if column name is empty and width and precision are 0, otherwise false.
     */
-  def isEmpty: Boolean = name.isEmpty && (width eq 0) && (precision eq 0)
+  def isEmpty: Boolean = name.isEmpty && (width == 0) && (precision == 0)
 
   /**
     * The function to ColumnFormat class string representation.

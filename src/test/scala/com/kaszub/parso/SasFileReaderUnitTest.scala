@@ -18,24 +18,25 @@ class SasFileReaderUnitTest extends FlatSpec {
     "Year of diagnosis", "Survival time in months", "Survival time in years", "Vital status at last contact",
     "Anatomical subsite of tumour", "Year of diagnosis 1985-94", "Age in 4 categories", "Date of diagnosis",
     "Date of exit")
-  /*private val COLON_COLUMN_TYPES : Seq[Class[Number]] = Seq(Number.type,
-    Number,
-    Number,
-    Number,
-    Number,
-    Number,
-    Number,
-    Number,
-    Number,
-    Number,
-    Number,
-    Number,
-    Number)*/
+  private val COLON_COLUMN_TYPES : Seq[Class[Number]] = Seq(
+    classOf[Number],
+    classOf[Number],
+    classOf[Number],
+    classOf[Number],
+    classOf[Number],
+    classOf[Number],
+    classOf[Number],
+    classOf[Number],
+    classOf[Number],
+    classOf[Number],
+    classOf[Number],
+    classOf[Number],
+    classOf[Number])
   private val COLON_COLUMN_LENGTHS = Seq(8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8)
   private val COLON_SAS_FILE_PROPERTIES = new SasFileProperties(
     false, null, 1, "US-ASCII", null, "colon","DATA",
-    Instant.ofEpochMilli(854409600000L).atOffset(ZoneOffset.UTC).toLocalDate,
-    Instant.ofEpochMilli(854409600000L).atOffset(ZoneOffset.UTC).toLocalDate,
+    Instant.ofEpochMilli(854409600000L).atOffset(ZoneOffset.UTC).toLocalDateTime,
+    Instant.ofEpochMilli(854409600000L).atOffset(ZoneOffset.UTC).toLocalDateTime,
     "7.00.00B", "WIN_95", "WIN", "",
     1024, 262144, 7, 15564,
     104, 2493, 13)
