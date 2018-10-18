@@ -5,6 +5,9 @@ import java.text.DecimalFormat
 import java.time.{LocalDate, LocalDateTime}
 import java.util.Locale
 
+import scala.io.Source
+import scala.util.Try
+
 /**
   * A helper class to allow re-use formatted values from sas7bdat file.
   */
@@ -13,78 +16,71 @@ final object DataWriterUtil {
   /**
     * The number of digits starting from the first non-zero value, used to round doubles.
     */
-  private val ACCURACY = 15
-
-  /**
-    * The class name of array of byte.
-    */
-  private val BYTE_ARRAY_CLASS_NAME = Seq[Byte](0).getClass.getName
+  val MaxDoublePrecision = 15
 
   /**
     * Encoding used to convert byte arrays to string.
     */
-  private val ENCODING = "CP1252"
+  private val Encoding = "CP1252"
 
   /**
     * If the number of digits in a double value exceeds a given constant, it rounds off.
     */
-  private val ROUNDING_LENGTH = 13
+  private val DoubleRoundingLength = 13
 
   /**
     * The constant to check whether or not a string containing double stores infinity.
     */
-  private val DOUBLE_INFINITY_STRING = "Infinity"
+  val DoubleInfinityString = "Infinity"
 
   /**
     * The format to output hours in the CSV format.
     */
-  private val HOURS_OUTPUT_FORMAT = "%02d"
+  private val HoursOutputFormat = "%02d"
 
   /**
     * The format to output minutes in the CSV format.
     */
-  private val MINUTES_OUTPUT_FORMAT = "%02d"
+  private val MinutesOutputFormat = "%02d"
 
   /**
     * The format to output seconds in the CSV format.
     */
-  private val SECONDS_OUTPUT_FORMAT = "%02d"
+  private val SecondsOutputFormat = "%02d"
 
   /**
     * The delimiter between hours and minutes, minutes and seconds in the CSV file.
     */
-  private val TIME_DELIMETER = ":"
-
-  import java.util
+  private val TimeDelimiter = ":"
 
   /**
     * The date formats to store the hour, minutes, seconds, and milliseconds. Appear in the data of
     * the {@link com.kaszub.parso.impl.FormatAndLabelSubheader} subheader
     * and are stored in {@link Column#format}.
     */
-  private val TIME_FORMAT_STRINGS = Seq("TIME", "HHMM")
+  val TimeFormatStrings = Seq("TIME", "HHMM")
 
   /**
     * The format to store the percentage values. Appear in the data of
     * the {@link com.kaszub.parso.impl.SasFileParser.FormatAndLabelSubheader} subheader
     * and are stored in {@link Column#format}.
     */
-  private val PERCENT_FORMAT = "PERCENT"
+  val PercentFormat = "PERCENT"
 
   /**
     * The number of seconds in a minute.
     */
-  private val SECONDS_IN_MINUTE = 60
+  private val SecondsInMinute = 60
 
   /**
     * The number of minutes in an hour.
     */
-  private val MINUTES_IN_HOUR = 60
+  private val MinutesInHour = 60
 
   /**
     * The locale for dates in output row.
     */
-  private val DEFAULT_LOCALE = Locale.getDefault
+  private val DefaultLocale = Locale.getDefault
 
   /**
     * The format to output percentage values in the CSV format. This format is used
@@ -182,21 +178,20 @@ final object DataWriterUtil {
     * @return a string representation of current processing entry.
     * @throws IOException appears if the output into writer is impossible.
     */
-  @throws[IOException]
-  private def processEntry(column: Column, entry: Any, locale: Locale): String = {
+  def processEntry(column: Column, entry: Any, locale: Locale = DefaultLocale): String = {
 
     entry match {
       case entry: Double => convertDoubleElementToString(entry)
       case entry: LocalDateTime => convertDateElementToString(entry, column.format.name, locale)
       case entry: String => {
-        if (entry.contains(DOUBLE_INFINITY_STRING))
+        if (entry.contains(DoubleInfinityString))
           ""
-        else if (TIME_FORMAT_STRINGS contains column.format.name)
-          convertTimeElementToString(entry.toLong) //Potential error if entry is not a long
-        else if (PERCENT_FORMAT eq column.format.name)
+        else if (column != null && (TimeFormatStrings contains column.format.name))
+          convertTimeElementToString(entry)
+        else if (column != null && PercentFormat == column.format.name)
           convertPercentElementToString(entry, column.format)
         else
-          entry.toString()
+          entry
       }
       case _ => ""
     }
@@ -211,7 +206,6 @@ final object DataWriterUtil {
     * @param locale the locale for parsing date.
     * @return the string that corresponds to the date in the format used.
     */
-
   private def convertDateElementToString(currentDate: LocalDateTime, format: String, locale: Locale) : String = {
     return ???
   /*    import java.text.SimpleDateFormat
@@ -224,6 +218,11 @@ final object DataWriterUtil {
   */
   }
 
+  private def convertTimeElementToString(secondsFromMidnight: String): String = {
+    assert(Try(secondsFromMidnight.toLong).isSuccess, "The passed value is not convertible to a long")
+    convertTimeElementToString(secondsFromMidnight.toLong)
+  }
+
   /**
     * The function to convert time without a date (hour, minute, second) from the sas7bdat file format
     * (which is the number of seconds elapsed from the midnight) into a string of the format set by the constants:
@@ -233,14 +232,14 @@ final object DataWriterUtil {
     * @param secondsFromMidnight the number of seconds elapsed from the midnight.
     * @return the string of time in the format set by constants.
     */
-  //TODO: Refactor
-  private def convertTimeElementToString(secondsFromMidnight: Long): String = {
-    ???
-    /*return String.format(HOURS_OUTPUT_FORMAT, secondsFromMidnight / SECONDS_IN_MINUTE / MINUTES_IN_HOUR) +
-      TIME_DELIMETER +
-      String.format(MINUTES_OUTPUT_FORMAT, secondsFromMidnight / SECONDS_IN_MINUTE % MINUTES_IN_HOUR) +
-      TIME_DELIMETER +
-      String.format(SECONDS_OUTPUT_FORMAT, secondsFromMidnight % SECONDS_IN_MINUTE)*/
+  def convertTimeElementToString(secondsFromMidnight: Long): String = {
+    assert(secondsFromMidnight >= 0, "seconds from midnight must be greater or equal than zero")
+
+    HoursOutputFormat.format(secondsFromMidnight / SecondsInMinute / MinutesInHour) +
+    TimeDelimiter +
+    MinutesOutputFormat.format(secondsFromMidnight / SecondsInMinute % MinutesInHour) +
+    TimeDelimiter +
+    SecondsOutputFormat.format(secondsFromMidnight %  SecondsInMinute)
   }
 
   /**
@@ -251,17 +250,17 @@ final object DataWriterUtil {
     * @param value the input numeric value to convert.
     * @return the string with the text presentation of the input numeric value.
     */
-  //TODO: Refactor
-  private def convertDoubleElementToString(value: Double): String = {
-    var valueToPrint = String.valueOf(value)
+  def convertDoubleElementToString(value: Double): String = {
+    val valueToPrint = String.valueOf(value)
 
-    if (valueToPrint.length > ROUNDING_LENGTH) {
+    //Strange to use the length of a string to count the precision instead of a BigDecimal, performance?
+    if (valueToPrint.length > DoubleRoundingLength) {
       val lengthBeforeDot = Math.ceil(Math.log10(Math.abs(value))).toInt
-      val bigDecimal = BigDecimal(value).setScale(ACCURACY - lengthBeforeDot, BigDecimal.RoundingMode.HALF_UP)
-      valueToPrint = String.valueOf(bigDecimal.doubleValue)
+      val bigDecimal = BigDecimal(value).setScale(MaxDoublePrecision - lengthBeforeDot, BigDecimal.RoundingMode.HALF_UP)
+      String.valueOf(bigDecimal.doubleValue)
     }
-
-    trimZerosFromEnd(valueToPrint)
+    else
+      trimZerosFromEnd(valueToPrint)
   }
 
   /**
@@ -274,10 +273,11 @@ final object DataWriterUtil {
     */
   def convertPercentElementToString(value: Any, columnFormat: ColumnFormat): String = {
     val doubleValue = value match {
+      case value : String => value.toDouble
       case value : Long => value.toDouble
       case value : Int => value.toDouble
       case value : Double => value
-      case _ => throw new NumberFormatException(s"The passed value is not a double")
+      case _ => throw new NumberFormatException("The passed value is not a double")
     }
 
     val df =
@@ -298,5 +298,35 @@ final object DataWriterUtil {
     */
   def trimZerosFromEnd(string: String): String =
     string.replaceAll("0*$", "").replaceAll("\\.$", "")
+
+  /**
+    * The method to convert the Objects array that stores data from the sas7bdat file to list of string.
+    *
+    * @param columns the {@link Column} class variables list that stores columns description from the sas7bdat file.
+    * @param row    the Objects arrays that stores data from the sas7bdat file.
+    * @param locale the locale for parsing date elements.
+    * @return list of String objects that represent data from sas7bdat file.
+    * @throws java.io.IOException appears if the output into writer is impossible.
+    */
+  private def getRowValues(columns: Seq[Column], row: Seq[Any], locale: Locale = DefaultLocale): Seq[String] =
+   columns.zipWithIndex.map(el => getValue(el._1, row(el._2), locale))
+
+  /**
+    * The method to convert the Object that stores data from the sas7bdat file cell to string.
+    *
+    * @param column the {@link Column} class variable that stores current processing column.
+    * @param entry  the Object that stores data from the cell of sas7bdat file.
+    * @param locale the locale for parsing date elements.
+    * @return a string representation of current processing entry.
+    * @throws IOException appears if the output into writer is impossible.
+    */
+  private def getValue(column: Column, entry: Any, locale: Locale): String = {
+
+    entry match {
+      case entry : Seq[Byte] => Source.fromBytes(entry.toArray, Encoding).mkString
+      case null => null
+      case entry => processEntry (column, entry, locale)
+    }
+  }
 
 }

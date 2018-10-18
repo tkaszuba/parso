@@ -7,6 +7,7 @@ package com.kaszub.parso
   * @param width     column format width.
   * @param precision column format precision.
   */
+//TODO: Consider renaming width to precision and precision to scale as it's confusing right now
 case class ColumnFormat(name: String, width: Int, precision: Int) {
 
   /**
