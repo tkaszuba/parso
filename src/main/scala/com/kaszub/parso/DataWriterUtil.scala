@@ -2,7 +2,8 @@ package com.kaszub.parso
 
 import java.io.IOException
 import java.text.DecimalFormat
-import java.time.{LocalDate, LocalDateTime}
+import java.time.format.DateTimeFormatter
+import java.time.ZonedDateTime
 import java.util.Locale
 
 import scala.io.Source
@@ -96,7 +97,7 @@ final object DataWriterUtil {
     * DTYYQC, PDJULG, PDJULI, QTR, QTRR, WEEKU, WEEKV, WEEKW,
     * YYQ, YYQC, YYQD, YYQN, YYQP, YYQS, YYQR, YYQRC, YYQRD, YYQRN, YYQRP, YYQRS
     */
-  private val DATE_OUTPUT_FORMAT_STRINGS = Map(
+  val DateOutputFormatStrings = Map(
     "B8601DA" -> "yyyyMMdd",
     "E8601DA" -> "yyyy-MM-dd",
     "DATE" -> "ddMMMyyyy",
@@ -182,7 +183,7 @@ final object DataWriterUtil {
 
     entry match {
       case entry: Double => convertDoubleElementToString(entry)
-      case entry: LocalDateTime => convertDateElementToString(entry, column.format.name, locale)
+      case entry: ZonedDateTime => convertDateTimeElementToString(entry, column.format.name, locale)
       case entry: String => {
         if (entry.contains(DoubleInfinityString))
           ""
@@ -206,16 +207,12 @@ final object DataWriterUtil {
     * @param locale the locale for parsing date.
     * @return the string that corresponds to the date in the format used.
     */
-  private def convertDateElementToString(currentDate: LocalDateTime, format: String, locale: Locale) : String = {
-    return ???
-  /*    import java.text.SimpleDateFormat
-        import java.util.TimeZone
-        var dateFormat: SimpleDateFormat = null
-        var valueToPrint: String = ""
-        dateFormat = new SimpleDateFormat(DATE_OUTPUT_FORMAT_STRINGS.get(format), locale)
-        dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"))
-        if (currentDate.getTime ne 0)  { valueToPrint = dateFormat.format(currentDate.getTime)
-  */
+  def convertDateTimeElementToString(currentDate: ZonedDateTime, format: String, locale: Locale = DefaultLocale) : String = {
+    assert(currentDate != null, "The date time can't be null")
+    assert(format != null, "The date time format can't be null")
+    assert(DateOutputFormatStrings.contains(format), s"The passed date time format ${format} is not supported")
+
+    currentDate.format(DateTimeFormatter.ofPattern(DateOutputFormatStrings(format), locale))
   }
 
   private def convertTimeElementToString(secondsFromMidnight: String): String = {
@@ -320,11 +317,11 @@ final object DataWriterUtil {
     * @return a string representation of current processing entry.
     * @throws IOException appears if the output into writer is impossible.
     */
-  private def getValue(column: Column, entry: Any, locale: Locale): String = {
+  def getValue(column: Column, entry: Any, locale: Locale = DefaultLocale): String = {
 
     entry match {
-      case entry : Seq[Byte] => Source.fromBytes(entry.toArray, Encoding).mkString
       case null => null
+      case entry : Seq[Byte] => Source.fromBytes(entry.toArray, Encoding).mkString
       case entry => processEntry (column, entry, locale)
     }
   }

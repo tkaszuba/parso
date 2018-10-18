@@ -1,6 +1,6 @@
 package com.kaszub.parso
 
-import java.time.LocalDateTime
+import java.time.ZonedDateTime
 
 import org.scalatest.FlatSpec
 
@@ -74,27 +74,48 @@ class DataWriterUtilSuite extends FlatSpec {
 
   "A time element" should "convert properly to a string" in {
     val tests = Set[(Long, String)](
-      (0, "00:00:00"),
-      (10, "00:00:10"),
-      (60, "00:01:00"),
-      (70, "00:01:10"),
-      (3600, "01:00:00"),
-      (3670, "01:01:10")
+      (0L, "00:00:00"),
+      (10L, "00:00:10"),
+      (60L, "00:01:00"),
+      (70L, "00:01:10"),
+      (3600L, "01:00:00"),
+      (3670L, "01:01:10")
     )
 
     tests.foreach(test =>
       assert(DataWriterUtil.convertTimeElementToString(test._1) === test._2))
   }
 
-    it should "produce an AssertionException when the value is less than 0" in {
+  it should "produce an AssertionException when the value is less than 0" in {
     intercept[AssertionError] {
       DataWriterUtil.convertTimeElementToString(-1)
     }
   }
 
   "A date time element" should "convert properly to a string" in {
-
+    DataWriterUtil.DateOutputFormatStrings.foreach(key =>
+      assert(DataWriterUtil.convertDateTimeElementToString(ZonedDateTime.now, key._1) != null)
+    )
   }
+
+  it should "produce an AssertionException when the date is null" in {
+    intercept[AssertionError] {
+      DataWriterUtil.convertDateTimeElementToString(null, "32312")
+    }
+  }
+
+  it should "produce an AssertionException when the date format is null" in {
+    intercept[AssertionError] {
+      DataWriterUtil.convertDateTimeElementToString(ZonedDateTime.now, null)
+    }
+  }
+
+  it should "produce an AssertionException when the date format can't be found" in {
+    intercept[AssertionError] {
+      DataWriterUtil.convertDateTimeElementToString(ZonedDateTime.now, "fdasfas!")
+    }
+  }
+
 
   "When processing an entry it" should "correctly process a double" in {
     assert(DataWriterUtil.processEntry(null, 2456909.098) == "2456909.098")
@@ -111,7 +132,7 @@ class DataWriterUtilSuite extends FlatSpec {
 
   it should "correctly process time" in {
     DataWriterUtil.TimeFormatStrings.foreach(time =>
-      assert(DataWriterUtil.processEntry(Column(0,"test","test",ColumnFormat(time, 0, 2),null,0),"3670") == "01:01:10")
+      assert(DataWriterUtil.processEntry(Column(0, "test", "test", ColumnFormat(time, 0, 2), null, 0), "3670") == "01:01:10")
     )
   }
 
@@ -120,13 +141,31 @@ class DataWriterUtilSuite extends FlatSpec {
   }
 
   it should "correctly process percentages" in {
-    val column = Column(0,"test","test",ColumnFormat(DataWriterUtil.PercentFormat, 1, 2), null, 0)
-    assert(DataWriterUtil.processEntry(column,"0.496") == "49.60%")
+    val column = Column(0, "test", "test", ColumnFormat(DataWriterUtil.PercentFormat, 1, 2), null, 0)
+    assert(DataWriterUtil.processEntry(column, "0.496") == "49.60%")
   }
 
   it should "correctly process date time" in {
-    val column = Column(0,"test","test",ColumnFormat(DataWriterUtil.PercentFormat, 1, 2), null, 0)
-    assert(DataWriterUtil.processEntry(column, LocalDateTime.now()) != null)
+    val column = Column(0, "test", "test", ColumnFormat(DataWriterUtil.DateOutputFormatStrings.keys.head, 1, 2), null, 0)
+    assert(DataWriterUtil.processEntry(column, ZonedDateTime.now()) != null)
   }
+
+  "When getting the value it" should "correctly process an entry" in {
+    val column = Column(0, "test", "test", ColumnFormat(DataWriterUtil.PercentFormat, 1, 2), null, 0)
+    assert(DataWriterUtil.getValue(column, "0.496") == "49.60%")
+  }
+
+  it should "return null if null is passed" in {
+    assert(DataWriterUtil.getValue(null, null) == null)
+  }
+
+  it should "return a decoded string if an array of bytes is passed" in {
+    //val bytes = Seq('±','²','³','´','µ').map(_.toByte)
+    val bytes = Seq(177, 178, 179, 180, 181).map(_.toByte)
+
+    assert(DataWriterUtil.getValue(null, bytes) == "±²³´µ")
+  }
+
+
 
   }
