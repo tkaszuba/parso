@@ -28,7 +28,7 @@ import java.time.{LocalDate, LocalDateTime}
   * @param columnsCount The number of columns in the table.
   *
   */
-case class SasFileProperties (u64 : Boolean, compressionMethod : String, endianness : Int, encoding : String,
+case class SasFileProperties (isU64 : Boolean, compressionMethod : String, endianness : Int, encoding : String,
                               sessionEncoding : String, name : String, fileType : String, dateCreated : LocalDateTime,
                               dateModified : LocalDateTime, sasRelease : String, serverType : String, osName : String,
                               osType : String, headerLength : Int, pageLength : Int, pageCount : Long, rowLength : Long,

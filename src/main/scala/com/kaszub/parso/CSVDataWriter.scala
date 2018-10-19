@@ -1,12 +1,11 @@
 package com.kaszub.parso
 
-import java.io.IOException
+import java.io.{IOException, Writer}
 
 /**
   * Trait for exporting data from sas7bdat file to csv.
   */
-trait CVSDataWriter {
-
+trait CSVDataWriter {
   /**
     * The method to export a row from sas7bdat file (stored as an object of the
     * {@link com.kaszub.parso.SasFileReaderImpl} class) using writer.
@@ -37,4 +36,5 @@ trait CVSDataWriter {
     */
   @throws[IOException]
   def writeColumnNames(columns: Seq[Column]): Unit
+
 }
