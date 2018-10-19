@@ -6,14 +6,17 @@ import org.scalatest.FlatSpec
 
 class DataWriterUtilSuite extends FlatSpec {
 
+  val Infinity = TestUtils.getConst[String](DataWriterUtil,"DoubleInfinityString")
+
   val DateFormats = TestUtils.getConst[Map[String,String]](DataWriterUtil,"DateOutputFormatStrings")
-  val InfinityFormat = TestUtils.getConst[String](DataWriterUtil,"DoubleInfinityString")
   val PercentFormat = TestUtils.getConst[String](DataWriterUtil,"PercentFormat")
   val TimeFormats = TestUtils.getConst[Seq[String]](DataWriterUtil,"TimeFormatStrings")
 
   val ColumnFormatNoPrecision = ColumnFormat("test", 1, 0)
   val ColumnFormatWithPrecision = ColumnFormat("test", 1, 2)
   val ColumnFormatPercentage = ColumnFormat(PercentFormat, 1, 2)
+  val ColumnFormatTime = ColumnFormat(TimeFormats.head, 1, 2)
+  val ColumnFormatDate = ColumnFormat(DateFormats.keys.head, 1, 2)
 
   "A percent element when converting to a string" should "convert properly with no column format precision" in {
     assert(DataWriterUtil.convertPercentElementToString(2.0, ColumnFormatNoPrecision) === "200%")
@@ -127,7 +130,7 @@ class DataWriterUtilSuite extends FlatSpec {
   }
 
   it should "return an empty string if it is infinity" in {
-    assert(DataWriterUtil.processEntry(null, InfinityFormat) == "")
+    assert(DataWriterUtil.processEntry(null, Infinity) == "")
   }
 
   it should "correctly process time" in {
@@ -146,7 +149,7 @@ class DataWriterUtilSuite extends FlatSpec {
   }
 
   it should "correctly process date time" in {
-    val column = Column(0, "test", "test", ColumnFormat(DateFormats.keys.head, 1, 2), null, 0)
+    val column = Column(0, "test", "test", ColumnFormatDate, null, 0)
     assert(DataWriterUtil.processEntry(column, ZonedDateTime.now()) != null)
   }
 
@@ -166,6 +169,31 @@ class DataWriterUtilSuite extends FlatSpec {
     assert(DataWriterUtil.getValue(null, bytes) == "±²³´µ")
   }
 
+  "When getting the row values it" should "correctly return the entries" in {
+    val columnMeta = Seq[Column](
+      Column(1, "Column1Name", "Column1Label", ColumnFormatPercentage, null, 0),
+      Column(2, "Column2Name", "Column2Label", ColumnFormatTime, null, 0),
+      Column(3, "Column3Name", "Column3Label", ColumnFormatDate, null, 0),
+      Column(4, "Column4Name", "Column4Label", ColumnFormatNoPrecision, null, 0),
+      Column(5, "Column5Name", "Column5Label", ColumnFormatWithPrecision, null, 0),
+      null
+    )
+    val row = Seq[Any](
+      "0.496",
+      "3670",
+      ZonedDateTime.now,
+      0.997,
+      .997,
+      Infinity
+    )
 
+    val values = DataWriterUtil.getRowValues(columnMeta, row)
 
+    assert(values(0) == "49.60%")
+    assert(values(1) == "01:01:10")
+    assert(values(2) != "")
+    assert(values(3) == "0.997")
+    assert(values(4) == "0.997")
+    assert(values(5) == "")
   }
+}

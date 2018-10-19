@@ -305,7 +305,7 @@ final object DataWriterUtil {
     * @return list of String objects that represent data from sas7bdat file.
     * @throws java.io.IOException appears if the output into writer is impossible.
     */
-  private def getRowValues(columns: Seq[Column], row: Seq[Any], locale: Locale = DefaultLocale): Seq[String] =
+  def getRowValues(columns: Seq[Column], row: Seq[Any], locale: Locale = DefaultLocale): Seq[String] =
    columns.zipWithIndex.map(el => getValue(el._1, row(el._2), locale))
 
   /**
