@@ -17,7 +17,7 @@ final object DataWriterUtil {
   /**
     * The number of digits starting from the first non-zero value, used to round doubles.
     */
-  val MaxDoublePrecision = 15
+  private val MaxDoublePrecision = 15
 
   /**
     * Encoding used to convert byte arrays to string.
@@ -32,7 +32,7 @@ final object DataWriterUtil {
   /**
     * The constant to check whether or not a string containing double stores infinity.
     */
-  val DoubleInfinityString = "Infinity"
+  private val DoubleInfinityString = "Infinity"
 
   /**
     * The format to output hours in the CSV format.
@@ -59,14 +59,14 @@ final object DataWriterUtil {
     * the {@link com.kaszub.parso.impl.FormatAndLabelSubheader} subheader
     * and are stored in {@link Column#format}.
     */
-  val TimeFormatStrings = Seq("TIME", "HHMM")
+  private val TimeFormatStrings = Seq("TIME", "HHMM")
 
   /**
     * The format to store the percentage values. Appear in the data of
     * the {@link com.kaszub.parso.impl.SasFileParser.FormatAndLabelSubheader} subheader
     * and are stored in {@link Column#format}.
     */
-  val PercentFormat = "PERCENT"
+  private val PercentFormat = "PERCENT"
 
   /**
     * The number of seconds in a minute.
@@ -97,7 +97,7 @@ final object DataWriterUtil {
     * DTYYQC, PDJULG, PDJULI, QTR, QTRR, WEEKU, WEEKV, WEEKW,
     * YYQ, YYQC, YYQD, YYQN, YYQP, YYQS, YYQR, YYQRC, YYQRD, YYQRN, YYQRP, YYQRS
     */
-  val DateOutputFormatStrings = Map(
+  private val DateOutputFormatStrings = Map(
     "B8601DA" -> "yyyyMMdd",
     "E8601DA" -> "yyyy-MM-dd",
     "DATE" -> "ddMMMyyyy",

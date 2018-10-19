@@ -11,6 +11,16 @@ object TestUtils {
 
   def getResourceAsStream(fileName: String) = Source.fromResource(fileName)
 
+  def getConst[T](obj : Any, fieldName : String): T = {
+    val field = obj.getClass.getDeclaredField(fieldName)
+    field.setAccessible(true)
+    field.get(obj).asInstanceOf[T]
+  }
+
+  //def getStringConst(obj: Any, fieldName:String): String = getConst(obj,fieldName).toString
+
+  def getSeqConst(obj: Any, fieldName:String): String = getConst(obj,fieldName).toString
+
   def getSas7bdatFilesList(fileOrFolderName: String): Seq[File] = {
 
     val fileOrFolder = new File(fileOrFolderName)

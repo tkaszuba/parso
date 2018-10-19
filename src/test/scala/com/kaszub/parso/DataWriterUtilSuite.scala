@@ -6,48 +6,50 @@ import org.scalatest.FlatSpec
 
 class DataWriterUtilSuite extends FlatSpec {
 
-  val columnFormat = ColumnFormat("test", 1, 2)
+  val DateFormats = TestUtils.getConst[Map[String,String]](DataWriterUtil,"DateOutputFormatStrings")
+  val InfinityFormat = TestUtils.getConst[String](DataWriterUtil,"DoubleInfinityString")
+  val PercentFormat = TestUtils.getConst[String](DataWriterUtil,"PercentFormat")
+  val TimeFormats = TestUtils.getConst[Seq[String]](DataWriterUtil,"TimeFormatStrings")
+
+  val ColumnFormatNoPrecision = ColumnFormat("test", 1, 0)
+  val ColumnFormatWithPrecision = ColumnFormat("test", 1, 2)
+  val ColumnFormatPercentage = ColumnFormat(PercentFormat, 1, 2)
 
   "A percent element when converting to a string" should "convert properly with no column format precision" in {
-    val columnFormat = ColumnFormat("test", 1, 0)
-
-    assert(DataWriterUtil.convertPercentElementToString(2.0, columnFormat) === "200%")
-    assert(DataWriterUtil.convertPercentElementToString(2, columnFormat) === "200%")
-    assert(DataWriterUtil.convertPercentElementToString(2L, columnFormat) === "200%")
-    assert(DataWriterUtil.convertPercentElementToString(1.5, columnFormat) === "150%")
-    assert(DataWriterUtil.convertPercentElementToString(0.997, columnFormat) === "100%")
-    assert(DataWriterUtil.convertPercentElementToString(0.987, columnFormat) === "99%")
-    assert(DataWriterUtil.convertPercentElementToString(0.496, columnFormat) === "50%")
-
+    assert(DataWriterUtil.convertPercentElementToString(2.0, ColumnFormatNoPrecision) === "200%")
+    assert(DataWriterUtil.convertPercentElementToString(2, ColumnFormatNoPrecision) === "200%")
+    assert(DataWriterUtil.convertPercentElementToString(2L, ColumnFormatNoPrecision) === "200%")
+    assert(DataWriterUtil.convertPercentElementToString(1.5, ColumnFormatNoPrecision) === "150%")
+    assert(DataWriterUtil.convertPercentElementToString(0.997, ColumnFormatNoPrecision) === "100%")
+    assert(DataWriterUtil.convertPercentElementToString(0.987, ColumnFormatNoPrecision) === "99%")
+    assert(DataWriterUtil.convertPercentElementToString(0.496, ColumnFormatNoPrecision) === "50%")
   }
 
   it should "convert properly with column format precision" in {
-    val columnFormat = ColumnFormat("test", 1, 2)
-
-    assert(DataWriterUtil.convertPercentElementToString(2.0, columnFormat) === "200.00%")
-    assert(DataWriterUtil.convertPercentElementToString(2, columnFormat) === "200.00%")
-    assert(DataWriterUtil.convertPercentElementToString(2L, columnFormat) === "200.00%")
-    assert(DataWriterUtil.convertPercentElementToString(1.5, columnFormat) === "150.00%")
-    assert(DataWriterUtil.convertPercentElementToString(0.997, columnFormat) === "99.70%")
-    assert(DataWriterUtil.convertPercentElementToString(0.987, columnFormat) === "98.70%")
-    assert(DataWriterUtil.convertPercentElementToString(0.496, columnFormat) === "49.60%")
+    assert(DataWriterUtil.convertPercentElementToString(2.0, ColumnFormatWithPrecision) === "200.00%")
+    assert(DataWriterUtil.convertPercentElementToString(2, ColumnFormatWithPrecision) === "200.00%")
+    assert(DataWriterUtil.convertPercentElementToString(2L, ColumnFormatWithPrecision) === "200.00%")
+    assert(DataWriterUtil.convertPercentElementToString(1.5, ColumnFormatWithPrecision) === "150.00%")
+    assert(DataWriterUtil.convertPercentElementToString(0.997, ColumnFormatWithPrecision) === "99.70%")
+    assert(DataWriterUtil.convertPercentElementToString(0.987, ColumnFormatWithPrecision) === "98.70%")
+    assert(DataWriterUtil.convertPercentElementToString(0.496, ColumnFormatWithPrecision) === "49.60%")
   }
 
   it should "produce a NumberFormatException when passed something other then a long, int or double" in {
     intercept[NumberFormatException] {
-      DataWriterUtil.convertPercentElementToString({}, ColumnFormat("test", 2, 0))
+      DataWriterUtil.convertPercentElementToString({}, ColumnFormatNoPrecision)
     }
   }
 
   it should "produce a NumberFormatException when passed a null" in {
     intercept[NumberFormatException] {
-      DataWriterUtil.convertPercentElementToString(null, ColumnFormat("test", 2, 0))
+      DataWriterUtil.convertPercentElementToString(null, ColumnFormatNoPrecision)
     }
   }
 
   it should "produce a NumberFormatException when passed a non convertible string" in {
     intercept[NumberFormatException] {
-      DataWriterUtil.convertPercentElementToString("a", ColumnFormat("test", 2, 0))
+      DataWriterUtil.convertPercentElementToString("a", ColumnFormatNoPrecision)
     }
   }
 
@@ -93,7 +95,7 @@ class DataWriterUtilSuite extends FlatSpec {
   }
 
   "A date time element" should "convert properly to a string" in {
-    DataWriterUtil.DateOutputFormatStrings.foreach(key =>
+    DateFormats.foreach(key =>
       assert(DataWriterUtil.convertDateTimeElementToString(ZonedDateTime.now, key._1) != null)
     )
   }
@@ -116,10 +118,8 @@ class DataWriterUtilSuite extends FlatSpec {
     }
   }
 
-
   "When processing an entry it" should "correctly process a double" in {
     assert(DataWriterUtil.processEntry(null, 2456909.098) == "2456909.098")
-
   }
 
   it should "return an empty string if is null" in {
@@ -127,12 +127,12 @@ class DataWriterUtilSuite extends FlatSpec {
   }
 
   it should "return an empty string if it is infinity" in {
-    assert(DataWriterUtil.processEntry(null, DataWriterUtil.DoubleInfinityString) == "")
+    assert(DataWriterUtil.processEntry(null, InfinityFormat) == "")
   }
 
   it should "correctly process time" in {
-    DataWriterUtil.TimeFormatStrings.foreach(time =>
-      assert(DataWriterUtil.processEntry(Column(0, "test", "test", ColumnFormat(time, 0, 2), null, 0), "3670") == "01:01:10")
+    TimeFormats.foreach(time =>
+      assert(DataWriterUtil.processEntry(Column(0, "test", "test", ColumnFormat(time, 1, 2), null, 0), "3670") == "01:01:10")
     )
   }
 
@@ -141,17 +141,17 @@ class DataWriterUtilSuite extends FlatSpec {
   }
 
   it should "correctly process percentages" in {
-    val column = Column(0, "test", "test", ColumnFormat(DataWriterUtil.PercentFormat, 1, 2), null, 0)
+    val column = Column(0, "test", "test", ColumnFormatPercentage, null, 0)
     assert(DataWriterUtil.processEntry(column, "0.496") == "49.60%")
   }
 
   it should "correctly process date time" in {
-    val column = Column(0, "test", "test", ColumnFormat(DataWriterUtil.DateOutputFormatStrings.keys.head, 1, 2), null, 0)
+    val column = Column(0, "test", "test", ColumnFormat(DateFormats.keys.head, 1, 2), null, 0)
     assert(DataWriterUtil.processEntry(column, ZonedDateTime.now()) != null)
   }
 
   "When getting the value it" should "correctly process an entry" in {
-    val column = Column(0, "test", "test", ColumnFormat(DataWriterUtil.PercentFormat, 1, 2), null, 0)
+    val column = Column(0, "test", "test", ColumnFormatPercentage, null, 0)
     assert(DataWriterUtil.getValue(column, "0.496") == "49.60%")
   }
 
