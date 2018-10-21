@@ -538,12 +538,12 @@ trait SasFileConstants {
     val TEXT_BLOCK_SIZE_LENGTH = 2
     /**
       * A substring that appears in the text block with information about file compression and table rows
-      * (name, label, format) if CHAR compression is used.
+      * (name, label, format) if Run Length Encoding is used.
       */
     val COMPRESS_CHAR_IDENTIFYING_STRING = "SASYZCRL"
     /**
       * A substring that appears in the text block with information about file compression and table rows
-      * (name, label, format) if BIN compression is used.
+      * (name, label, format) if Ross Data compression is used.
       */
     val COMPRESS_BIN_IDENTIFYING_STRING = "SASYZCR2"
     /**

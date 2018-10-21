@@ -1,10 +1,12 @@
 package com.kaszub.parso
 
-import java.io.IOException
+import java.io.{DataInputStream, EOFException, IOException}
 import java.text.DecimalFormat
 import java.time.format.DateTimeFormatter
 import java.time.ZonedDateTime
 import java.util.Locale
+
+import com.kaszub.parso.impl.ParserMessageConstants
 
 import scala.io.Source
 import scala.util.Try
@@ -12,7 +14,7 @@ import scala.util.Try
 /**
   * A helper class to allow re-use formatted values from sas7bdat file.
   */
-final object DataWriterUtil {
+final object DataWriterUtil extends ParserMessageConstants{
 
   /**
     * The number of digits starting from the first non-zero value, used to round doubles.
@@ -321,8 +323,8 @@ final object DataWriterUtil {
 
     entry match {
       case null => null
-      case entry : Seq[Byte] => Source.fromBytes(entry.toArray, Encoding).mkString
-      case entry => processEntry (column, entry, locale)
+      case e: Seq[Byte] => Source.fromBytes(e.toArray, Encoding).mkString
+      case _ => processEntry (column, entry , locale)
     }
   }
 

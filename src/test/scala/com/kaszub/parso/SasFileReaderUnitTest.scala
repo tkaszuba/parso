@@ -35,8 +35,8 @@ class SasFileReaderUnitTest extends FlatSpec {
   private val COLON_COLUMN_LENGTHS = Seq(8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8)
   private val COLON_SAS_FILE_PROPERTIES = new SasFileProperties(
     false, null, 1, "US-ASCII", null, "colon","DATA",
-    Instant.ofEpochMilli(854409600000L).atOffset(ZoneOffset.UTC).toLocalDateTime,
-    Instant.ofEpochMilli(854409600000L).atOffset(ZoneOffset.UTC).toLocalDateTime,
+    Instant.ofEpochMilli(854409600000L).atOffset(ZoneOffset.UTC).toZonedDateTime,
+    Instant.ofEpochMilli(854409600000L).atOffset(ZoneOffset.UTC).toZonedDateTime,
     "7.00.00B", "WIN_95", "WIN", "",
     1024, 262144, 7, 15564,
     104, 2493, 13)
@@ -52,7 +52,7 @@ class SasFileReaderUnitTest extends FlatSpec {
 
   }
 
-  "The SAS dataset reader" should "read in 15564 rows" in {
+  "The SAS dataset reader" should "read in rows properly" in {
 
   }
 

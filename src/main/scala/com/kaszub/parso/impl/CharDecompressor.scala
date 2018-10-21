@@ -4,7 +4,7 @@ import com.typesafe.scalalogging.Logger
 
 /**
 * Implementation of the CHAR compression algorithm which corresponds to the literal "SASYZCRL".
-* Refer the documentation for further details.
+* Decompresses using the Run Length Encoding algorithm. Refer the documentation for further details.
 * It follows the general contract provided by the interface <code>Decompressor</code>.
 *
 */
@@ -12,7 +12,7 @@ object CharDecompressor extends Decompressor {
   /**
     * Unambiguous class instance.
     */
-  val INSTANCE = new CharDecompressor.type
+  //val INSTANCE = classOf[this.type]
   /**
     * Object for writing logs.
     */
@@ -39,7 +39,7 @@ object CharDecompressor extends Decompressor {
       val endOfFirstByte = page(offset + currentByteIndex) & 0x0
 
       controlByte match {
-        case 0x30 || 0x20 || 0x10 || 0x00 => {
+        case 0x30 | 0x20 | 0x10 | 0x00 => {
           if (currentByteIndex != length - 1) {
             val countOfBytesToCopy = (page(offset + currentByteIndex + 1) & 0xFF) + 64 +
               page(offset + currentByteIndex) * 256
@@ -70,7 +70,7 @@ object CharDecompressor extends Decompressor {
           //  resultByteArray(currentResultArrayIndex += 1) = 0x00
           currentByteIndex += 1
         }
-        case 0x80 || 0x90 || 0xA0 || 0xB0 => {
+        case 0x80 | 0x90 | 0xA0 | 0xB0 => {
           var countOfBytesToCopy = Math.min(endOfFirstByte + 1 + (controlByte - 0x80),
             length - (currentByteIndex + 1))
           //System.arraycopy(page, offset + currentByteIndex + 1, resultByteArray,
