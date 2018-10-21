@@ -11,7 +11,7 @@ import com.typesafe.scalalogging.Logger
 import scala.io.Source
 import scala.util.control.Breaks._
 
-case class SasFileParser private (val sasFileStream : DataInputStream = null,
+case class SasFileParser private (val sasFileStream : BufferedInputStream = null,
                          encoding : String = null,
                          byteOutput: Boolean = false
                         ) extends SasFileConstants with ParserMessageConstants {
@@ -178,7 +178,7 @@ case class SasFileParser private (val sasFileStream : DataInputStream = null,
   )
 
   private def this(builder: SasFileParser#Builder) = {
-    this(new DataInputStream(builder.inputStream), builder.encoding, builder.byteOutput)
+    this(new BufferedInputStream(builder.inputStream), builder.encoding, builder.byteOutput)
 
 
     /*
@@ -209,7 +209,7 @@ LOGGER.error(e.getMessage, e)
       var endOfMetadata = false
       while (!endOfMetadata) {
         try
-          sasFileStream.readFully(cachedPage, 0, sasFileProperties.pageLength)
+          sasFileStream.read(cachedPage, 0, sasFileProperties.pageLength)
         catch {
           case ex: EOFException =>
             eof = true
@@ -335,8 +335,11 @@ LOGGER.error(e.getMessage, e)
 
   @throws[IOException]
   private def getBytesFromFile(offset: Seq[Long], length: Seq[Int]): Seq[Seq[Byte]] = {
-    if (cachedPage == null)
-      SasFileParser.getBytesFromFile(sasFileStream, currentFilePosition, offset, length)
+    if (cachedPage == null) {
+      val res = SasFileParser.getBytesFromFile(sasFileStream, currentFilePosition, offset, length)
+      eof = res.eof
+      res.readBytes
+    }
     else
       SasFileParser.getBytesFromFile(cachedPage, offset, length)
   }
@@ -749,6 +752,8 @@ LOGGER.error(e.getMessage, e)
 }
 
 object SasFileParser extends ParserMessageConstants{
+  case class BytesReadResult(eof : Boolean = false, lastPosition: Long = 0, readBytes: Seq[Seq[Byte]] = Seq())
+
   /**
     * The function to read the list of bytes arrays from the sas7bdat file. The array of offsets and the array of
     * lengths serve as input data that define the location and number of bytes the function must read.
@@ -759,7 +764,6 @@ object SasFileParser extends ParserMessageConstants{
     * @throws IOException if reading from the { @link SasFileParser#sasFileStream} stream is impossible.
     */
   @throws[IOException]
-  //todo: move to different object?
   def getBytesFromFile(page: Seq[Byte], offset: Seq[Long], length: Seq[Int]): Seq[Seq[Byte]] = {
     offset.iterator.map(i => {
       val curOffset = offset(i.toInt).toInt
@@ -779,11 +783,12 @@ object SasFileParser extends ParserMessageConstants{
     * @throws IOException if reading from the { @link SasFileParser#sasFileStream} stream is impossible.
     */
   @throws[IOException]
-  def getBytesFromFile(fileStream: DataInputStream, position: Long, offset: Seq[Long], length: Seq[Int]): Seq[Seq[Byte]] = {
+  def getBytesFromFile(fileStream: BufferedInputStream, position: Long, offset: Seq[Long], length: Seq[Int]): BytesReadResult = {
 
     def skipStream(i: Long, pos: Long): Long= {
       (0L to offset(i.toInt) - pos).foldLeft(0L)((actuallySkipped, j) => {
-        if (actuallySkipped < offset(i.toInt) - pos) return actuallySkipped
+        //println(j)
+        if (actuallySkipped >= offset(i.toInt) - pos) return actuallySkipped
         try
           actuallySkipped + fileStream.skip(offset(i.toInt) - pos - actuallySkipped)
         catch {
@@ -793,21 +798,23 @@ object SasFileParser extends ParserMessageConstants{
       })
     }
 
-    offset.foldLeft((position, Seq[Seq[Byte]]()))((acc: (Long, Seq[Seq[Byte]]), i: Long) => {
-      skipStream(i, acc._1)
-
+    (0L to offset.length - 1).foldLeft(BytesReadResult(lastPosition = position))((acc: BytesReadResult, i: Long) => {
+      skipStream(i, acc.lastPosition)
+     // println(acc.lastPosition)
       val temp = new Array[Byte](length(i.toInt))
-      try
-        fileStream.readFully(temp, 0, length(i.toInt))
-      catch {
-        case e: EOFException =>
-          ??? //eof = true
+
+      val eof = {
+        try {
+          fileStream.read(temp, 0, length(i.toInt))
+          false
+        }
+        catch {
+          case _: EOFException => true
+        }
       }
 
-      val existingSeq: Seq[Seq[Byte]] = acc._2
-
-      (offset(i.toInt) + length(i.toInt).toLong, existingSeq :+ temp.toSeq)
-    })._2
+      BytesReadResult(eof, offset(i.toInt) + length(i.toInt).toLong, acc.readBytes :+ temp.toSeq)
+    })
   }
 }
 
