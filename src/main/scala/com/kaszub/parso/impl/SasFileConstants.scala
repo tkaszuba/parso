@@ -124,6 +124,11 @@ trait SasFileConstants {
       * a {@link SasFileConstants#ENCODING_OFFSET} bytes offset.
       */
     val ENCODING_LENGTH = 1
+
+    /** The default encoding to use if one is missing from the sas7bdat files
+      */
+    val DefaultEncoding = "US-ASCII"
+
     /**
       * The integer (one or two bytes) at the {@link SasFileConstants#ENCODING_OFFSET} indicates the character encoding
       * of string data.  The SAS_CHARACTER_ENCODINGS map links the values that are known to occur and the associated

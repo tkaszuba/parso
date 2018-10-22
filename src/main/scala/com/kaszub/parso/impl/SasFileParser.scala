@@ -2,7 +2,7 @@ package com.kaszub.parso.impl
 
 import java.io._
 import java.nio.{ByteBuffer, ByteOrder}
-import java.time.ZonedDateTime
+import java.time.{Instant, ZoneOffset, ZonedDateTime}
 
 import com.kaszub.parso.DataWriterUtil.EMPTY_INPUT_STREAM
 import com.kaszub.parso.{Column, ColumnMissingInfo, DataWriterUtil, SasFileProperties}
@@ -229,66 +229,8 @@ LOGGER.error(e.getMessage, e)
     **/
   @throws[IOException]
   private def processSasFileHeader(properties: SasFileProperties): Unit = {
-
-    //todo: refactor to not be variable
-    var align1 = 0
-    var align2 = 0
-
-    val offsetForAlign = Seq(ALIGN_1_OFFSET, ALIGN_2_OFFSET)
-    val lengthForAlign = Seq(ALIGN_1_LENGTH, ALIGN_2_LENGTH)
-    val varsForAlign = getBytesFromFile(offsetForAlign, lengthForAlign)
-
-    val propertiesU64 =
-      if (varsForAlign(0)(0) == U64_BYTE_CHECKER_VALUE) {
-        align2 = ALIGN_2_VALUE
-        sasFileProperties.setIsU64(true)
-      }
-      else
-        properties
-
-    if (varsForAlign(1)(0) == ALIGN_1_CHECKER_VALUE)
-      align1 = ALIGN_1_VALUE
-
-    val totalAlign = align1 + align2
-
-    val offset = Seq(ENDIANNESS_OFFSET, ENCODING_OFFSET, DATASET_OFFSET, FILE_TYPE_OFFSET,
-      DATE_CREATED_OFFSET + align1, DATE_MODIFIED_OFFSET + align1, HEADER_SIZE_OFFSET + align1,
-      PAGE_SIZE_OFFSET + align1, PAGE_COUNT_OFFSET + align1, SAS_RELEASE_OFFSET + totalAlign,
-      SAS_SERVER_TYPE_OFFSET + totalAlign, OS_VERSION_NUMBER_OFFSET + totalAlign,
-      OS_MAKER_OFFSET + totalAlign, OS_NAME_OFFSET + totalAlign)
-
-    val length = Seq(ENDIANNESS_LENGTH, ENCODING_LENGTH, DATASET_LENGTH,
-      FILE_TYPE_LENGTH, DATE_CREATED_LENGTH, DATE_MODIFIED_LENGTH,
-      HEADER_SIZE_LENGTH, PAGE_SIZE_LENGTH, PAGE_COUNT_LENGTH + align2,
-      SAS_RELEASE_LENGTH, SAS_SERVER_TYPE_LENGTH, OS_VERSION_NUMBER_LENGTH,
-      OS_MAKER_LENGTH, OS_NAME_LENGTH)
-
-    val vars = getBytesFromFile(offset, length)
-
-    val propertiesEndianeness = propertiesU64.setEndianness(vars(0)(0))
-
-    if (!isSasFileValid(propertiesEndianeness))
-      throw new IOException(FILE_NOT_VALID)
-
-    val encoding = SAS_CHARACTER_ENCODINGS.get(vars(1)(0))
-
-    //if (encoding != null)
-    //  this.encoding = encoding.get
-
-
+    ???
   }
-
-  /**
-    * The method to validate sas7bdat file. If sasFileProperties contains an encoding value other than
-    * {@link SasFileConstants#LITTLE_ENDIAN_CHECKER} or {@link SasFileConstants#BIG_ENDIAN_CHECKER}
-    * the file is considered invalid.
-    *
-    * @return true if the value of encoding equals to {@link SasFileConstants#LITTLE_ENDIAN_CHECKER}
-    *      or { @link SasFileConstants#BIG_ENDIAN_CHECKER}
-    */
-  //todo: move to SasFileProperties
-  private def isSasFileValid(properties: SasFileProperties): Boolean =
-    properties.endianness == LITTLE_ENDIAN_CHECKER || properties.endianness == BIG_ENDIAN_CHECKER
 
   /**
     * The method to read page metadata and store it in {@link SasFileParser#currentPageType},
@@ -342,161 +284,6 @@ LOGGER.error(e.getMessage, e)
     }
     else
       SasFileParser.getBytesFromFile(cachedPage, offset, length)
-  }
-
-  /**
-    * The function to convert a bytes array into a number (int or long depending on the value located at
-    * the {@link SasFileConstants#ALIGN_2_OFFSET} offset).
-    *
-    * @param byteBuffer the long value represented by a bytes array.
-    * @return a long value. If the number was stored as int, then after conversion it is converted to long
-    *         for convenience.
-    */
-  private def correctLongProcess(byteBuffer: ByteBuffer): Long =
-    if (sasFileProperties.isU64) byteBuffer.getLong else byteBuffer.getInt
-
-  /**
-    * The function to convert an array of bytes with any order of bytes into {@link ByteBuffer}.
-    * {@link ByteBuffer} has the order of bytes defined in the file located at the
-    * {@link SasFileConstants#ALIGN_2_OFFSET} offset.
-    * Later the parser converts result {@link ByteBuffer} into a number.
-    *
-    * @param data the input array of bytes with the little-endian or big-endian order.
-    * @return {@link ByteBuffer} with the order of bytes defined in the file located at
-    *                 the {@link SasFileConstants#ALIGN_2_OFFSET} offset.
-    */
-  //TODO: Refactor?
-  private def byteArrayToByteBuffer(data: Seq[Byte]): ByteBuffer = {
-    val byteBuffer = ByteBuffer.wrap(data.toArray)
-    if (sasFileProperties.endianness == 0) byteBuffer
-    else byteBuffer.order(ByteOrder.LITTLE_ENDIAN)
-  }
-
-  /**
-  * The function to convert an array of bytes into a number. The result can be double or long values.
-  * The numbers are stored in the IEEE 754 format. A number is considered long if the difference between the whole
-  * number and its integer part is less than {@link SasFileConstants#EPSILON}.
-    *
-  * @param mass the number represented by an array of bytes.
-  * @return number of a long or double type.
-  */
-  private def convertByteArrayToNumber(mass : Seq[Byte]): Any = {
-    val resultDouble: Double = bytesToDouble(mass)
-
-    if (resultDouble.isNaN || (resultDouble < NAN_EPSILON && resultDouble > 0)) null
-
-    val resultLong: Long = Math.round(resultDouble)
-
-    if (Math.abs(resultDouble - resultLong) >= EPSILON)
-      resultDouble
-    else
-      resultLong
-  }
-
-  /**
-    * The function to convert an array of bytes into a numeral of the {@link Short} type.
-    * For convenience, the resulting number is converted into the int type.
-    *
-    * @param bytes a long number represented by an array of bytes.
-    * @return a number of the int type that is the conversion result.
-    */
-  private def bytesToShort(bytes: Seq[Byte]): Int =  byteArrayToByteBuffer(bytes).getShort
-
-  /**
-    * The function to convert an array of bytes into an int number.
-    *
-    * @param bytes a long number represented by an array of bytes.
-    * @return a number of the int type that is the conversion result.
-    */
-  private def bytesToInt(bytes: Seq[Byte]): Int = byteArrayToByteBuffer(bytes).getInt
-
-  /**
-    * The function to convert an array of bytes into a long number.
-    *
-    * @param bytes a long number represented by an array of bytes.
-    * @return a number of the long type that is the conversion result.
-    */
-  private def bytesToLong(bytes: Seq[Byte]): Long = correctLongProcess(byteArrayToByteBuffer(bytes))
-
-  /**
-    * The function to convert an array of bytes into a string.
-    *
-    * @param bytes a string represented by an array of bytes.
-    * @return the conversion result string.
-    */
-  private def bytesToString(bytes: Seq[Byte]): String = Source.fromBytes(bytes.toArray, encoding).mkString
-
-  /**
-    * The function to convert a sub-range of an array of bytes into a string.
-    *
-    * @param bytes  a string represented by an array of bytes.
-    * @param offset the initial offset
-    * @param length the length
-    * @return the conversion result string.
-    * @throws UnsupportedEncodingException    when unknown encoding.
-    * @throws StringIndexOutOfBoundsException when invalid offset and/or length.
-    */
-  @throws[UnsupportedEncodingException]
-  @throws[StringIndexOutOfBoundsException]
-  private def bytesToString(bytes: Seq[Byte], offset: Int, length: Int): String =
-    new java.lang.String(bytes.toArray, offset, length, encoding)
-
-  /**
-    * The function to convert an array of bytes that stores the number of seconds elapsed from 01/01/1960 into
-    * a variable of the {@link Date} type. The {@link SasFileConstants#DATE_TIME_FORMAT_STRINGS} variable stores
-    * the formats of the columns that store such data.
-    *
-    * @param bytes an array of bytes that stores the type.
-    * @return a variable of the { @link Date} type.
-    */
-  private def bytesToDateTime(bytes: Seq[Byte]): ZonedDateTime = {
-    val doubleSeconds: Double = bytesToDouble(bytes)
-    if (doubleSeconds.isNaN)
-      null
-    else
-      ???
-    ///else new Nothing(((doubleSeconds - START_DATES_SECONDS_DIFFERENCE) * MILLISECONDS_IN_SECONDS).asInstanceOf[Long])
-  }
-
-  /**
-    * The function to convert an array of bytes that stores the number of days elapsed from 01/01/1960 into a variable
-    * of the {@link Date} type. {@link SasFileConstants#DATE_FORMAT_STRINGS} stores the formats of columns that contain
-    * such data.
-    *
-    * @param bytes the array of bytes that stores the number of days from 01/01/1960.
-    * @return a variable of the { @link Date} type.
-    */
-  private def bytesToDate(bytes: Array[Byte]): ZonedDateTime = {
-    val doubleDays: Double = bytesToDouble(bytes)
-    if (doubleDays.isNaN)
-      null
-    else
-      ???
-      //new Nothing(((doubleDays - START_DATES_DAYS_DIFFERENCE) * SECONDS_IN_MINUTE * MINUTES_IN_HOUR * HOURS_IN_DAY * MILLISECONDS_IN_SECONDS).asInstanceOf[Long])
-  }
-
-  /**
-    * The function to convert an array of bytes into a double number.
-    *
-    * @param bytes a double number represented by an array of bytes.
-    * @return a number of the double type that is the conversion result.
-    */
-  private def bytesToDouble(bytes: Seq[Byte]): Double = {
-    ???
-
-    /*var original = byteArrayToByteBuffer(bytes)
-    if (bytes.length < BYTES_IN_DOUBLE) {
-      val byteBuffer = ByteBuffer.allocate(BYTES_IN_DOUBLE)
-
-      if (sasFileProperties.endianness == 1)
-        byteBuffer.position(BYTES_IN_DOUBLE - bytes.length)
-
-      byteBuffer.put(original)
-      byteBuffer.order(original.order)
-      byteBuffer.position(0)
-      original = byteBuffer
-    }
-    original.getDouble*/
   }
 
   /**
@@ -653,14 +440,26 @@ LOGGER.error(e.getMessage, e)
       val length = Seq(intOrLongLength, intOrLongLength, intOrLongLength)
       val vars = getBytesFromFile(offset, length)
 
+      val isU64 = properties.isU64
+      val endianness = properties.endianness
+
       val propertiesRowLength =
-        if (sasFileProperties.rowLength == 0) properties.setRowLength(bytesToLong(vars(0))) else properties
+        if (sasFileProperties.rowLength == 0)
+          properties.setRowLength(SasFileParser.bytesToLong(vars(0), isU64, endianness))
+        else
+          properties
 
       val propertiesRowCount =
-        if (sasFileProperties.rowCount == 0) propertiesRowLength.setRowCount(bytesToLong(vars(1))) else propertiesRowLength
+        if (sasFileProperties.rowCount == 0)
+          propertiesRowLength.setRowCount(SasFileParser.bytesToLong(vars(1), isU64, endianness))
+        else
+          propertiesRowLength
 
       val propertiesMixPageRowCount =
-        if (sasFileProperties.mixPageRowCount == 0) propertiesRowCount.setMixPageRowCount(bytesToLong(vars(2))) else propertiesRowCount
+        if (sasFileProperties.mixPageRowCount == 0)
+          propertiesRowCount.setMixPageRowCount(SasFileParser.bytesToLong(vars(2), isU64, endianness))
+        else
+          propertiesRowCount
 
       //TODO: Remove this
       sasFileProperties = propertiesMixPageRowCount
@@ -688,7 +487,8 @@ LOGGER.error(e.getMessage, e)
       val vars = getBytesFromFile(offset, length)
 
       //TODO: Remove this
-      sasFileProperties = properties.setColumnsCount(bytesToLong(vars(0)))
+      sasFileProperties =
+        properties.setColumnsCount(SasFileParser.bytesToLong(vars(0), sasFileProperties.isU64,sasFileProperties.endianness))
     }
   }
 
@@ -729,7 +529,7 @@ LOGGER.error(e.getMessage, e)
         val lengthByteBuffer = Seq(TEXT_BLOCK_SIZE_LENGTH)
 
         val vars = getBytesFromFile(offset, lengthByteBuffer)
-        val textBlockSize = byteArrayToByteBuffer(vars(0)).getInt//.getShort
+        val textBlockSize = SasFileParser.byteArrayToByteBuffer(vars(0), properties.endianness).getInt//.getShort
 
         val lengthFile = Seq(textBlockSize)
         val varsFile = getBytesFromFile(offset, lengthFile)
@@ -751,8 +551,192 @@ LOGGER.error(e.getMessage, e)
     }
 }
 
-object SasFileParser extends ParserMessageConstants{
-  case class BytesReadResult(eof : Boolean = false, lastPosition: Long = 0, readBytes: Seq[Seq[Byte]] = Seq())
+object SasFileParser extends ParserMessageConstants with SasFileConstants {
+
+  /**
+    * The function to convert a bytes array into a number (int or long depending on the value located at
+    * the {@link SasFileConstants#ALIGN_2_OFFSET} offset).
+    *
+    * @param byteBuffer the long value represented by a bytes array.
+    * @return a long value. If the number was stored as int, then after conversion it is converted to long
+    *         for convenience.
+    */
+  private def correctLongProcess(byteBuffer: ByteBuffer, isU64: Boolean): Long =
+    if (isU64) byteBuffer.getLong else byteBuffer.getInt
+
+  /**
+    * The function to convert an array of bytes with any order of bytes into {@link ByteBuffer}.
+    * {@link ByteBuffer} has the order of bytes defined in the file located at the
+    * {@link SasFileConstants#ALIGN_2_OFFSET} offset.
+    * Later the parser converts result {@link ByteBuffer} into a number.
+    *
+    * @param data the input array of bytes with the little-endian or big-endian order.
+    * @return {@link ByteBuffer} with the order of bytes defined in the file located at
+    *                 the {@link SasFileConstants#ALIGN_2_OFFSET} offset.
+    */
+  def byteArrayToByteBuffer(data: Seq[Byte], endianness: Int): ByteBuffer = {
+    val byteBuffer = ByteBuffer.wrap(data.toArray)
+    if (endianness == 0)
+      byteBuffer
+    else
+      byteBuffer.order(ByteOrder.LITTLE_ENDIAN)
+  }
+
+  /**
+    * The function to convert an array of bytes into a number. The result can be double or long values.
+    * The numbers are stored in the IEEE 754 format. A number is considered long if the difference between the whole
+    * number and its integer part is less than {@link SasFileConstants#EPSILON}.
+    *
+    * @param mass the number represented by an array of bytes.
+    * @return number of a long or double type.
+    */
+  private def convertByteArrayToNumber(mass : Seq[Byte], endianness: Int): Any = {
+    val resultDouble: Double = bytesToDouble(mass, endianness)
+
+    if (resultDouble.isNaN || (resultDouble < NAN_EPSILON && resultDouble > 0)) null
+
+    val resultLong: Long = Math.round(resultDouble)
+
+    if (Math.abs(resultDouble - resultLong) >= EPSILON)
+      resultDouble
+    else
+      resultLong
+  }
+
+  /**
+    * The function to convert an array of bytes into a numeral of the {@link Short} type.
+    * For convenience, the resulting number is converted into the int type.
+    *
+    * @param bytes a long number represented by an array of bytes.
+    * @return a number of the int type that is the conversion result.
+    */
+  def bytesToShort(bytes: Seq[Byte], endianness: Int): Int =
+    byteArrayToByteBuffer(bytes, endianness).getShort
+
+  /**
+    * The function to convert an array of bytes into an int number.
+    *
+    * @param bytes a long number represented by an array of bytes.
+    * @return a number of the int type that is the conversion result.
+    */
+  def bytesToInt(bytes: Seq[Byte], endianness: Int): Int =
+    byteArrayToByteBuffer(bytes, endianness).getInt
+
+  /**
+    * The function to convert an array of bytes into a long number.
+    *
+    * @param bytes a long number represented by an array of bytes.
+    * @return a number of the long type that is the conversion result.
+    */
+  def bytesToLong(bytes: Seq[Byte], isU64: Boolean, endianness: Int): Long =
+    correctLongProcess(byteArrayToByteBuffer(bytes, endianness), isU64)
+
+  /**
+    * The function to convert an array of bytes into a string.
+    *
+    * @param bytes a string represented by an array of bytes.
+    * @return the conversion result string.
+    */
+  def bytesToString(bytes: Seq[Byte], encoding: String): String =
+    Source.fromBytes(bytes.toArray, encoding).mkString
+
+  /**
+    * The function to convert a sub-range of an array of bytes into a string.
+    *
+    * @param bytes  a string represented by an array of bytes.
+    * @param offset the initial offset
+    * @param length the length
+    * @return the conversion result string.
+    * @throws UnsupportedEncodingException    when unknown encoding.
+    * @throws StringIndexOutOfBoundsException when invalid offset and/or length.
+    */
+  @throws[UnsupportedEncodingException]
+  @throws[StringIndexOutOfBoundsException]
+  def bytesToString(bytes: Seq[Byte], offset: Int, length: Int, encoding: String): String =
+    new java.lang.String(bytes.toArray, offset, length, encoding)
+
+  /**
+    * The function to convert an array of bytes that stores the number of seconds elapsed from 01/01/1960 into
+    * a variable of the {@link Date} type. The {@link SasFileConstants#DATE_TIME_FORMAT_STRINGS} variable stores
+    * the formats of the columns that store such data.
+    *
+    * @param bytes an array of bytes that stores the type.
+    * @return a variable of the { @link Date} type.
+    */
+  def bytesToDateTime(bytes: Seq[Byte], endianness: Int): ZonedDateTime = {
+    val doubleSeconds: Double = bytesToDouble(bytes, endianness)
+    if (doubleSeconds.isNaN)
+      null
+    else
+      Instant.ofEpochSecond(
+        (doubleSeconds - START_DATES_SECONDS_DIFFERENCE).toLong).atOffset(ZoneOffset.UTC).toZonedDateTime
+  }
+
+  /**
+    * The function to convert an array of bytes that stores the number of days elapsed from 01/01/1960 into a variable
+    * of the {@link Date} type. {@link SasFileConstants#DATE_FORMAT_STRINGS} stores the formats of columns that contain
+    * such data.
+    *
+    * @param bytes the array of bytes that stores the number of days from 01/01/1960.
+    * @return a variable of the { @link Date} type.
+    */
+  def bytesToDate(bytes: Seq[Byte], endianness: Int): ZonedDateTime = {
+    val doubleDays: Double = bytesToDouble(bytes, endianness)
+    if (doubleDays.isNaN)
+      null
+    else
+      Instant.ofEpochMilli(
+        ((doubleDays - START_DATES_DAYS_DIFFERENCE) *
+          SECONDS_IN_MINUTE *
+          MINUTES_IN_HOUR *
+          HOURS_IN_DAY).toLong).atOffset(ZoneOffset.UTC).toZonedDateTime
+  }
+
+  /**
+    * The function to convert an array of bytes into a double number.
+    *
+    * @param bytes a double number represented by an array of bytes.
+    * @return a number of the double type that is the conversion result.
+    */
+  def bytesToDouble(bytes: Seq[Byte], endianness: Int): Double = {
+
+    val original = byteArrayToByteBuffer(bytes, endianness)
+
+    if (bytes.length < BYTES_IN_DOUBLE) {
+      val byteBuffer = ByteBuffer.allocate(BYTES_IN_DOUBLE)
+
+      if (endianness == LITTLE_ENDIAN_CHECKER)
+        byteBuffer.position(BYTES_IN_DOUBLE - bytes.length)
+
+      byteBuffer.put(original)
+      byteBuffer.order(original.order)
+      byteBuffer.position(0)
+      byteBuffer.getDouble
+    }
+    else
+      original.getDouble
+  }
+
+  /**
+    * The result of reading bytes from a file
+    *
+    * @param eof          whether the eof file was reached while reading the stream
+    * @param lastPosition the last position when reading the input stream
+    * @param readBytes    the matrix of read bytes
+    */
+  case class BytesReadResult(eof: Boolean = false, lastPosition: Long = 0L, readBytes: Seq[Seq[Byte]] = Seq())
+
+  private def skipStream(stream: InputStream, skipTo: Long): Long = {
+    (0L to skipTo).foldLeft(0L)((actuallySkipped, j) => {
+      //println(j)
+      if (actuallySkipped >= skipTo) return actuallySkipped
+      try
+        actuallySkipped + stream.skip(skipTo - actuallySkipped)
+      catch {
+        case e: IOException => throw new IOException(EMPTY_INPUT_STREAM)
+      }
+    })
+  }
 
   /**
     * The function to read the list of bytes arrays from the sas7bdat file. The array of offsets and the array of
@@ -785,25 +769,12 @@ object SasFileParser extends ParserMessageConstants{
   @throws[IOException]
   def getBytesFromFile(fileStream: BufferedInputStream, position: Long, offset: Seq[Long], length: Seq[Int]): BytesReadResult = {
 
-    def skipStream(i: Long, pos: Long): Long= {
-      (0L to offset(i.toInt) - pos).foldLeft(0L)((actuallySkipped, j) => {
-        //println(j)
-        if (actuallySkipped >= offset(i.toInt) - pos) return actuallySkipped
-        try
-          actuallySkipped + fileStream.skip(offset(i.toInt) - pos - actuallySkipped)
-        catch {
-          case e: IOException =>
-            throw new IOException(EMPTY_INPUT_STREAM)
-        }
-      })
-    }
-
     (0L to offset.length - 1).foldLeft(BytesReadResult(lastPosition = position))((acc: BytesReadResult, i: Long) => {
-      skipStream(i, acc.lastPosition)
-     // println(acc.lastPosition)
+      skipStream(fileStream, offset(i.toInt) - acc.lastPosition)
+      // println(acc.lastPosition)
       val temp = new Array[Byte](length(i.toInt))
 
-      val eof = {
+      val eof: Boolean = {
         try {
           fileStream.read(temp, 0, length(i.toInt))
           false
@@ -816,5 +787,81 @@ object SasFileParser extends ParserMessageConstants{
       BytesReadResult(eof, offset(i.toInt) + length(i.toInt).toLong, acc.readBytes :+ temp.toSeq)
     })
   }
+
+  /**
+    * The method to validate sas7bdat file. If sasFileProperties contains an encoding value other than
+    * {@link SasFileConstants#LITTLE_ENDIAN_CHECKER} or {@link SasFileConstants#BIG_ENDIAN_CHECKER}
+    * the file is considered invalid.
+    *
+    * @return true if the value of encoding equals to { @link SasFileConstants#LITTLE_ENDIAN_CHECKER}
+    *                                                         or { @link SasFileConstants#BIG_ENDIAN_CHECKER}
+    */
+  def isSasFileValid(endianness: Int): Boolean =
+    endianness == LITTLE_ENDIAN_CHECKER || endianness == BIG_ENDIAN_CHECKER
+
+  /**
+    * The method to read and parse metadata from the sas7bdat file`s header in {@link SasFileParser#sasFileProperties}.
+    * After reading is complete, {@link SasFileParser#currentFilePosition} is set to the end of the header whose length
+    * is stored at the {@link SasFileConstants#HEADER_SIZE_OFFSET} offset.
+    *
+    * @param offset the initial sas file properties
+    * @throws IOException if reading from the {@link SasFileParser#sasFileStream} stream is impossible.
+    **/
+  @throws[IOException]
+  def processSasFileHeader(fileStream: BufferedInputStream): SasFileProperties = {
+
+    val offsetForAlign = Seq(ALIGN_1_OFFSET, ALIGN_2_OFFSET)
+    val lengthForAlign = Seq(ALIGN_1_LENGTH, ALIGN_2_LENGTH)
+    val resU64 = getBytesFromFile(fileStream, 0, offsetForAlign, lengthForAlign)
+
+    val isU64: Boolean = resU64.readBytes(0)(0) == U64_BYTE_CHECKER_VALUE
+    val align1 = if (resU64.readBytes(1)(0) == ALIGN_1_CHECKER_VALUE) ALIGN_1_VALUE else 0
+    val align2 = if (isU64) ALIGN_2_VALUE else 0
+    val totalAlign = align1 + align2
+
+    val offset = Seq(ENDIANNESS_OFFSET, ENCODING_OFFSET, DATASET_OFFSET, FILE_TYPE_OFFSET,
+      DATE_CREATED_OFFSET + align1, DATE_MODIFIED_OFFSET + align1, HEADER_SIZE_OFFSET + align1,
+      PAGE_SIZE_OFFSET + align1, PAGE_COUNT_OFFSET + align1, SAS_RELEASE_OFFSET + totalAlign,
+      SAS_SERVER_TYPE_OFFSET + totalAlign, OS_VERSION_NUMBER_OFFSET + totalAlign,
+      OS_MAKER_OFFSET + totalAlign, OS_NAME_OFFSET + totalAlign)
+
+    val length = Seq(ENDIANNESS_LENGTH, ENCODING_LENGTH, DATASET_LENGTH,
+      FILE_TYPE_LENGTH, DATE_CREATED_LENGTH, DATE_MODIFIED_LENGTH,
+      HEADER_SIZE_LENGTH, PAGE_SIZE_LENGTH, PAGE_COUNT_LENGTH + align2,
+      SAS_RELEASE_LENGTH, SAS_SERVER_TYPE_LENGTH, OS_VERSION_NUMBER_LENGTH,
+      OS_MAKER_LENGTH, OS_NAME_LENGTH)
+
+    val res = getBytesFromFile(fileStream, resU64.lastPosition, offset, length)
+
+    val endianeness = res.readBytes(0)(0)
+
+    if (!isSasFileValid(endianeness))
+      throw new IOException(FILE_NOT_VALID)
+
+    val isEncodingPresent = SAS_CHARACTER_ENCODINGS.contains(res.readBytes(1)(0))
+    val encoding = if (isEncodingPresent) SAS_CHARACTER_ENCODINGS(res.readBytes(1)(0)) else DefaultEncoding
+
+    val properties = SasFileProperties(
+      isU64, null, endianeness, encoding, null, bytesToString(res.readBytes(2),encoding).trim,
+      bytesToString(res.readBytes(3),encoding).trim, bytesToDateTime(res.readBytes(4), endianeness),
+      bytesToDateTime(res.readBytes(5), endianeness), bytesToString(res.readBytes(9),encoding).trim,
+      bytesToString(res.readBytes(10),encoding).trim,
+      if (res.readBytes(13)(0) != 0)
+        bytesToString(res.readBytes(13),encoding).trim
+      else
+        bytesToString(res.readBytes(12),encoding).trim,
+      bytesToString(res.readBytes(11),encoding).trim, bytesToInt(res.readBytes(6),endianeness),
+      bytesToInt(res.readBytes(7),endianeness), bytesToLong(res.readBytes(8),isU64, endianeness)
+    )
+
+    //Skip the rest of the bytes in the header length
+    if (fileStream != null)
+      skipStream(fileStream, properties.headerLength - res.lastPosition)
+    //currentFilePosition = 0
+
+    properties
+
+  }
+
 }
 
