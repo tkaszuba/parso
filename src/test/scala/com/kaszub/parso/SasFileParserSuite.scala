@@ -22,14 +22,16 @@ class SasFileParserSuite extends FlatSpec with SasFileConstants {
       Thread.currentThread().getContextClassLoader().getResourceAsStream(DefaultFileName)
     )
 
-    val offsetForAlign = Seq(ALIGN_1_OFFSET, ALIGN_2_OFFSET)
-    val lengthForAlign = Seq(ALIGN_1_LENGTH, ALIGN_2_LENGTH)
+    val offsetForAlign = Seq(Align1Offset, Align2Offset)
+    val lengthForAlign = Seq(Align1Length, Align2Length)
 
     val res = SasFileParser.getBytesFromFile(inputStream, 0, offsetForAlign, lengthForAlign)
     val eof = res.eof
     val vars = res.readBytes
 
     assert(!eof)
+    assert(res.relPosition == offsetForAlign(1) + lengthForAlign(1))
+    assert(res.absPosition == offsetForAlign(0) + lengthForAlign(0) + offsetForAlign(1) + lengthForAlign(1))
     assert(vars(0)(0).toHexString == "22")
     assert(vars(1)(0).toHexString == "32")
 
@@ -42,8 +44,8 @@ class SasFileParserSuite extends FlatSpec with SasFileConstants {
   }
 
   "Checking if a sas file is valid" should "return the proper validity" in {
-    assert(SasFileParser.isSasFileValid(LITTLE_ENDIAN_CHECKER))
-    assert(SasFileParser.isSasFileValid(BIG_ENDIAN_CHECKER))
+    assert(SasFileParser.isSasFileValid(LittleEndianChecker))
+    assert(SasFileParser.isSasFileValid(BigEndianChecker))
     assert(!SasFileParser.isSasFileValid(-1))
   }
 
@@ -57,10 +59,10 @@ class SasFileParserSuite extends FlatSpec with SasFileConstants {
   it should "return proper byte values based on the endianes" in {
     val bytes = Seq(0x45,0x67,0x98,0x12).map(_.toByte)
 
-    val little = SasFileParser.byteArrayToByteBuffer(bytes, LITTLE_ENDIAN_CHECKER)
+    val little = SasFileParser.byteArrayToByteBuffer(bytes, LittleEndianChecker)
     assert(little.array().toSeq == bytes)
     assert(little.order() == ByteOrder.LITTLE_ENDIAN)
-    val big = SasFileParser.byteArrayToByteBuffer(bytes, BIG_ENDIAN_CHECKER)
+    val big = SasFileParser.byteArrayToByteBuffer(bytes, BigEndianChecker)
     assert(big.array().toSeq == bytes)
     assert(big.order() == ByteOrder.BIG_ENDIAN)
   }
@@ -68,29 +70,29 @@ class SasFileParserSuite extends FlatSpec with SasFileConstants {
   it should "return proper integer values" in {
     val bytes = Seq(0x45,0x67,0x98,0x12).map(_.toByte)
 
-    assert(SasFileParser.bytesToInt(bytes, LITTLE_ENDIAN_CHECKER) == 311977797)
-    assert(SasFileParser.bytesToInt(bytes, BIG_ENDIAN_CHECKER) == 1164417042)
+    assert(SasFileParser.bytesToInt(bytes, LittleEndianChecker) == 311977797)
+    assert(SasFileParser.bytesToInt(bytes, BigEndianChecker) == 1164417042)
   }
 
   it should "return proper short values" in {
     val bytes = Seq(0x20,0x12).map(_.toByte)
 
-    assert(SasFileParser.bytesToShort(bytes, LITTLE_ENDIAN_CHECKER) == 4640)
-    assert(SasFileParser.bytesToShort(bytes, BIG_ENDIAN_CHECKER) == 8210)
+    assert(SasFileParser.bytesToShort(bytes, LittleEndianChecker) == 4640)
+    assert(SasFileParser.bytesToShort(bytes, BigEndianChecker) == 8210)
   }
 
   it should "return proper long values" in {
     val bytes = Seq(07F,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF).map(_.toByte)
 
-    assert(SasFileParser.bytesToLong(bytes, true, BIG_ENDIAN_CHECKER) == 576460752303423487L)
-    assert(SasFileParser.bytesToLong(bytes, false, BIG_ENDIAN_CHECKER) == 134217727L)
+    assert(SasFileParser.bytesToLong(bytes, true, BigEndianChecker) == 576460752303423487L)
+    assert(SasFileParser.bytesToLong(bytes, false, BigEndianChecker) == 134217727L)
   }
 
   it should "return proper double values" in {
     val bytes = Seq(0x20,0x12).map(_.toByte)
 
-    assert(SasFileParser.bytesToDouble(bytes, BIG_ENDIAN_CHECKER) == 3.356253329040093E-154)
-    assert(SasFileParser.bytesToDouble(bytes, LITTLE_ENDIAN_CHECKER) == 2.2131618651272261E-221)
+    assert(SasFileParser.bytesToDouble(bytes, BigEndianChecker) == 3.356253329040093E-154)
+    assert(SasFileParser.bytesToDouble(bytes, LittleEndianChecker) == 2.2131618651272261E-221)
   }
 
   it should "return proper date time" in {
@@ -98,7 +100,7 @@ class SasFileParserSuite extends FlatSpec with SasFileConstants {
     val date = ZonedDateTime.of(
       1997,1,28,0,0,0,0, ZoneOffset.UTC)
 
-    assert(SasFileParser.bytesToDateTime(bytes, LITTLE_ENDIAN_CHECKER) == date)
+    assert(SasFileParser.bytesToDateTime(bytes, LittleEndianChecker) == date)
     //assert(SasFileParser.bytesToDate(bytes, LITTLE_ENDIAN_CHECKER) == date)
 
   }
@@ -122,12 +124,64 @@ class SasFileParserSuite extends FlatSpec with SasFileConstants {
       Thread.currentThread().getContextClassLoader().getResourceAsStream(ColonFileName)
     )
 
-    val res = SasFileParser.processSasFileHeader(inputStream)
+    val res = SasFileParser.readSasFileHeader(inputStream)
 
-    assert(res == properties)
+    assert(res.properties == properties)
 
     inputStream.close()
   }
 
+  it should "move the position of the input stream to the end of the header" in {
+    val file1 = new BufferedInputStream(
+      Thread.currentThread().getContextClassLoader().getResourceAsStream(ColonFileName))
 
+    val file2 = new BufferedInputStream(
+      Thread.currentThread().getContextClassLoader().getResourceAsStream(ColonFileName))
+
+    val res = SasFileParser.readSasFileHeader(file1)
+
+    assert(res.properties.headerLength == 1024)
+
+    val expected =
+      SasFileParser.getBytesFromFile(file2, 0, Seq(res.properties.headerLength.toLong), Seq(30)).readBytes
+
+    val result =
+      SasFileParser.getBytesFromFile(file1, 0, Seq(0L), Seq(30)).readBytes
+
+    assert(result == expected)
+
+    file1.close()
+    file2.close()
+  }
+
+  "Reading the Page header from a SAS file" should "return the proper results" in {
+    val file = new BufferedInputStream(
+      Thread.currentThread().getContextClassLoader().getResourceAsStream(ColonFileName))
+
+    val fileHeader = SasFileParser.readSasFileHeader(file)
+    val pageHeader = SasFileParser.readPageHeader(file, fileHeader.properties)
+
+    assert(pageHeader.pageType == 512)
+    assert(pageHeader.blockCount == 2514)
+    assert(pageHeader.subheaderCount == 21)
+  }
+
+  "Reading the subheader pointers" should "return the proper number of parsed pointers" in {
+    val file = new BufferedInputStream(
+      Thread.currentThread().getContextClassLoader().getResourceAsStream(ColonFileName))
+
+    val fileHeader = SasFileParser.readSasFileHeader(file)
+    val pageHeader = SasFileParser.readPageHeader(file, fileHeader.properties)
+
+    val pointers = (0 to pageHeader.subheaderCount - 1).map(
+      SasFileParser.readSubheaderPointer(file, fileHeader.properties, _))
+
+    assert(pointers.length == pageHeader.subheaderCount)
+    assert(pointers(0).offset == -52166656)
+    assert(pointers(0).length == 19922947)
+    assert(pointers(0).compression == 0)
+    assert(pointers(0)._type == 0)
+
+    file.close()
+  }
 }

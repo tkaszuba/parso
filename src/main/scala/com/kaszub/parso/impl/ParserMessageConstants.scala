@@ -16,7 +16,7 @@ trait ParserMessageConstants {
   /**
     * Debug info in case of an unknown subheader signature.
     */
-  val UNKNOWN_SUBHEADER_SIGNATURE = "Unknown subheader signature"
+  val UnknownSubheaderSignature = "Unknown subheader signature"
   /**
     * Warn info if 'null' is provided as the file compression literal.
     */
@@ -32,19 +32,19 @@ trait ParserMessageConstants {
   /**
     * Debug info. Subheader count.
     */
-  val SUBHEADER_COUNT = "Subheader count: {}"
+  val SubheaderCount = "Subheader count: %s"
   /**
     * Debug info. Block count.
     */
-  val BLOCK_COUNT = "Block count: {}"
+  val BlockCount = "Block count: %s"
   /**
     * Debug info. Page type.
     */
-  val PAGE_TYPE = "Page type: {}"
+  val PageType = "Page type: %s"
   /**
     * Debug info. Subheader process function name.
     */
-  val SUBHEADER_PROCESS_FUNCTION_NAME = "Subheader process function name: {}"
+  val SubheaderProcessFunctionName = "Subheader process function name: {}"
   /**
     * Debug info. Column format.
     */

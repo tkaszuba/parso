@@ -8,43 +8,43 @@ trait SasFileConstants {
     /**
       * The size of the long value type in bytes.
       */
-    val BYTES_IN_LONG = 8
+    val BytesInLong = 8
     /**
       * The size of the double value type in bytes.
       */
-    val BYTES_IN_DOUBLE = 8
+    val BytesInDouble = 8
     /**
       * The size of the int value type in bytes.
       */
-    val BYTES_IN_INT = 4
+    val BytesInInt = 4
     /**
       * If a value with the length of {@link SasFileConstants#ALIGN_1_LENGTH} bytes stored in the sas7bdat file with
       * a {@link SasFileConstants#ALIGN_1_OFFSET} bytes offset equals to ALIGN_1_CHECKER_VALUE, then starting from
       * the {@link SasFileConstants#DATE_CREATED_OFFSET} bytes offset every offset should increase by
       * {@link SasFileConstants#ALIGN_1_VALUE} bytes.
       */
-    val ALIGN_1_CHECKER_VALUE = 51
+    val Align1CheckerValue = 51
     /**
       * If a value with the length of {@link SasFileConstants#ALIGN_1_LENGTH} bytes stored in the sas7bdat file with
       * a ALIGN_1_OFFSET bytes offset equals to {@link SasFileConstants#ALIGN_1_CHECKER_VALUE}, then starting from
       * the {@link SasFileConstants#DATE_CREATED_OFFSET} bytes offset every offset should increase by
       * {@link SasFileConstants#ALIGN_1_VALUE} bytes.
       */
-    val ALIGN_1_OFFSET = 32L
+    val Align1Offset = 32L
     /**
       * If a value with the length of ALIGN_1_LENGTH bytes stored in the sas7bdat file with
       * a {@link SasFileConstants#ALIGN_1_OFFSET} bytes offset equals to {@link SasFileConstants#ALIGN_1_CHECKER_VALUE},
       * then starting from the {@link SasFileConstants#DATE_CREATED_OFFSET} bytes offset every offset should increase
       * by {@link SasFileConstants#ALIGN_1_VALUE} bytes.
       */
-    val ALIGN_1_LENGTH = 1
+    val Align1Length = 1
     /**
       * If a value with the length of {@link SasFileConstants#ALIGN_1_LENGTH} bytes stored in the sas7bdat file with
       * a {@link SasFileConstants#ALIGN_1_OFFSET} bytes offset equals to {@link SasFileConstants#ALIGN_1_CHECKER_VALUE},
       * then starting from the {@link SasFileConstants#DATE_CREATED_OFFSET} bytes offset every offset should increase by
       * ALIGN_1_VALUE bytes.
       */
-    val ALIGN_1_VALUE = 4
+    val Align1Value = 4
     /**
       * If a value with the length of {@link SasFileConstants#ALIGN_2_LENGTH} bytes stored in the sas7bdat file with
       * a {@link SasFileConstants#ALIGN_2_OFFSET} bytes offset equals to U64_BYTE_CHECKER_VALUE, then:
@@ -56,7 +56,7 @@ trait SasFileConstants {
       * bytes and the number of pages stored at the {@link SasFileConstants#PAGE_COUNT_OFFSET} bytes offset should read
       * as long.
       */
-    val U64_BYTE_CHECKER_VALUE = 51
+    val U64ByteCheckerValue = 51
     /**
       * If a value with the length of {@link SasFileConstants#ALIGN_2_LENGTH} bytes stored in the sas7bdat file with
       * a ALIGN_2_OFFSET bytes offset equals to {@link SasFileConstants#U64_BYTE_CHECKER_VALUE}, then:
@@ -66,7 +66,7 @@ trait SasFileConstants {
       * bytes if those are added) and the number of pages stored at the {@link SasFileConstants#PAGE_COUNT_OFFSET} bytes
       * offset should read as long.
       */
-    val ALIGN_2_OFFSET = 35L
+    val Align2Offset = 35L
     /**
       * If a value with the length of ALIGN_2_LENGTH bytes stored in the sas7bdat file at
       * a {@link SasFileConstants#ALIGN_2_OFFSET} bytes offset equals to
@@ -77,7 +77,7 @@ trait SasFileConstants {
       * those are added) and the number of pages stored at the {@link SasFileConstants#PAGE_COUNT_OFFSET} bytes offset
       * should read as long.
       */
-    val ALIGN_2_LENGTH = 1
+    val Align2Length = 1
     /**
       * If a value with the length of {@link SasFileConstants#ALIGN_2_LENGTH} bytes stored in the sas7bdat file with
       * a {@link SasFileConstants#ALIGN_2_OFFSET} bytes offset equals to
@@ -87,43 +87,43 @@ trait SasFileConstants {
       * ALIGN_2_VALUE bytes (in addition to {@link SasFileConstants#ALIGN_1_VALUE} bytes if those are added) and
       * the number of pages stored at the {@link SasFileConstants#PAGE_COUNT_OFFSET} bytes offset should read as long.
       */
-    val ALIGN_2_VALUE = 4
+    val Align2Value = 4
     /**
       * If a value with the length of {@link SasFileConstants#ENDIANNESS_LENGTH} bytes stored in the sas7bdat file with
       * a ENDIANNESS_OFFSET bytes offset equals to 1 then the bytes order is little-endian (Intel),
       * if the value equals to 0 then the bytes order is big-endian.
       */
-    val ENDIANNESS_OFFSET = 37L
+    val EndiannessOffset = 37L
     /**
       * If a value with the length of ENDIANNESS_LENGTH bytes stored in the sas7bdat file with
       * a {@link SasFileConstants#ENDIANNESS_OFFSET} bytes offset equals to 1 then the bytes order is
       * little-endian (Intel), if the value equals to 0 then the bytes order is big-endian.
       */
-    val ENDIANNESS_LENGTH = 1
+    val EndiannessLength = 1
     /**
-      * If a value with the length of ENDIANNESS_LENGTH bytes stored in the sas7bdat file with
-      * a {@link SasFileConstants#ENDIANNESS_OFFSET} bytes offset equals to LITTLE_ENDIAN_CHECKER
+      * If a value with the length of EndiannessLength bytes stored in the sas7bdat file with
+      * a {@link SasFileConstants#EndiannessOffset} bytes offset equals to LittleEndianChecker
       * then the bytes order is little-endian (Intel), if the value equals to
-      * {@link SasFileConstants#BIG_ENDIAN_CHECKER} then the bytes order is big-endian.
+      * {@link SasFileConstants#BigEndianChecker} then the bytes order is big-endian.
       */
-    val LITTLE_ENDIAN_CHECKER = 1
+    val LittleEndianChecker = 1
     /**
-      * If a value with the length of ENDIANNESS_LENGTH bytes stored in the sas7bdat file with
-      * a {@link SasFileConstants#ENDIANNESS_OFFSET} bytes offset equals to
-      * {@link SasFileConstants#LITTLE_ENDIAN_CHECKER} then the bytes order is little-endian (Intel),
-      * if the value equals to BIG_ENDIAN_CHECKER then the bytes order is big-endian.
+      * If a value with the length of EndiannessLength bytes stored in the sas7bdat file with
+      * a {@link SasFileConstants#EndiannessOffset} bytes offset equals to
+      * {@link SasFileConstants#LittleEndianChecker} then the bytes order is little-endian (Intel),
+      * if the value equals to BigEndianChecker then the bytes order is big-endian.
       */
-    val BIG_ENDIAN_CHECKER = 0
+    val BigEndianChecker = 0
     /**
       * The sas7bdat file stores its character encoding with the length of {@link SasFileConstants#ENCODING_LENGTH} bytes
       * and a ENCODING_OFFSET bytes offset.
       */
-    val ENCODING_OFFSET = 70L
+    val EncodingOffset = 70L
     /**
       * The sas7bdat files its character encoding with the length of ENCODING_LENGTH bytes and
       * a {@link SasFileConstants#ENCODING_OFFSET} bytes offset.
       */
-    val ENCODING_LENGTH = 1
+    val EncodingLength = 1
 
     /** The default encoding to use if one is missing from the sas7bdat files
       */
@@ -134,7 +134,7 @@ trait SasFileConstants {
       * of string data.  The SAS_CHARACTER_ENCODINGS map links the values that are known to occur and the associated
       * encoding.  This list excludes encodings present in SAS but missing support in {@link java.nio.charset}
       */
-    val SAS_CHARACTER_ENCODINGS= Map[Byte, String](
+    val SasCharacterEncodings = Map[Byte, String](
         0x46.toByte -> "x-MacArabic",
         0xF5.toByte -> "x-MacCroatian",
         0xF6.toByte -> "x-MacCyrillic",
@@ -252,123 +252,123 @@ trait SasFileConstants {
       * The sas7bdat file stores the table name with the length of {@link SasFileConstants#DATASET_LENGTH} bytes and
       * a DATASET_OFFSET bytes offset.
       */
-    val DATASET_OFFSET = 92L
+    val DatasetOffset = 92L
     /**
       * The sas7bdat file stores the table name with the length of DATASET_LENGTH bytes and
-      * a {@link SasFileConstants#DATASET_OFFSET} bytes offset.
+      * a {@link SasFileConstants#DatasetOffset} bytes offset.
       */
-    val DATASET_LENGTH = 64
+    val DatasetLength = 64
     /**
       * The sas7bdat file stores its file type with the length of {@link SasFileConstants#FILE_TYPE_LENGTH} bytes
       * and a FILE_TYPE_OFFSET bytes offset.
       */
-    val FILE_TYPE_OFFSET = 156L
+    val FileTypeOffset = 156L
     /**
       * The sas7bdat file stores its file type with the length of FILE_TYPE_LENGTH bytes and
       * a {@link SasFileConstants#FILE_TYPE_OFFSET} bytes offset.
       */
-    val FILE_TYPE_LENGTH = 8
+    val FileTypeLength = 8
     /**
       * The sas7bdat file stores its creation date with the length of {@link SasFileConstants#DATE_CREATED_LENGTH} bytes
       * and a DATE_CREATED_OFFSET bytes offset (with possible addition of {@link SasFileConstants#ALIGN_1_VALUE}).
       * The date is a double value denoting the number of seconds elapsed from 01/01/1960 to the date stored.
       */
-    val DATE_CREATED_OFFSET = 164L
+    val DateCreatedOffset = 164L
     /**
       * The sas7bdat file stores its creation date with the length of DATE_CREATED_LENGTH bytes and
       * a {@link SasFileConstants#DATE_CREATED_OFFSET} bytes offset (with possible addition of
       * {@link SasFileConstants#ALIGN_1_VALUE}). The date is a double value denoting the number of seconds elapsed
       * from 01/01/1960 to the date stored.
       */
-    val DATE_CREATED_LENGTH = 8
+    val DateCreatedLength = 8
     /**
       * The sas7bdat file stores its last modification date with the length of
       * {@link SasFileConstants#DATE_MODIFIED_LENGTH} bytes and a DATE_MODIFIED_OFFSET bytes offset (with possible
       * addition of {@link SasFileConstants#ALIGN_1_VALUE}). The date is a double value denoting the number of seconds
       * elapsed from 01/01/1960 to the date stored.
       */
-    val DATE_MODIFIED_OFFSET = 172L
+    val DateModifiedOffset = 172L
     /**
       * The sas7bdat file stores its last modification date with the length of DATE_MODIFIED_LENGTH bytes and
       * a {@link SasFileConstants#DATE_MODIFIED_OFFSET} bytes offset (with possible addition of
       * {@link SasFileConstants#ALIGN_1_VALUE}). The date is a value of double format denoting the number of seconds
       * elapsed from 01/01/1960 to the date stored.
       */
-    val DATE_MODIFIED_LENGTH = 8
+    val DateModifiedLength = 8
     /**
       * The sas7bdat file stores the length of its metadata (can be 1024 and 8192) as an int value with the length of
       * {@link SasFileConstants#HEADER_SIZE_LENGTH} bytes and a HEADER_SIZE_OFFSET bytes offset (with possible addition
       * of {@link SasFileConstants#ALIGN_1_VALUE}).
       */
-    val HEADER_SIZE_OFFSET = 196L
+    val HeaderSizeOffset = 196L
     /**
       * The sas7bdat file stores the length of its metadata (can be 1024 and 8192) as an int value with the length of
       * HEADER_SIZE_LENGTH bytes and a  {@link SasFileConstants#HEADER_SIZE_OFFSET} bytes offset (with possible addition
       * of {@link SasFileConstants#ALIGN_1_VALUE}).
       */
-    val HEADER_SIZE_LENGTH = 4
+    val HeaderSizeLength = 4
     /**
       * The sas7bdat file stores the length of its pages as an int value with the length of
       * {@link SasFileConstants#PAGE_SIZE_LENGTH} bytes and a PAGE_SIZE_OFFSET bytes offset (with possible addition of
       * {@link SasFileConstants#ALIGN_1_VALUE}).
       */
-    val PAGE_SIZE_OFFSET = 200L
+    val PageSizeOffset = 200L
     /**
       * The sas7bdat file stores the length of its pages as an int value with the length of PAGE_SIZE_LENGTH bytes and
       * a {@link SasFileConstants#PAGE_SIZE_OFFSET} bytes offset (with possible addition of
       * {@link SasFileConstants#ALIGN_1_VALUE}).
       */
-    val PAGE_SIZE_LENGTH = 4
+    val PageSizeLength = 4
     /**
       * The sas7bdat file stores the number of its pages as an int or long value (depending on
       * {@link SasFileConstants#ALIGN_2_VALUE}) with the length of {@link SasFileConstants#PAGE_COUNT_LENGTH} bytes
       * (with possible addition of {@link SasFileConstants#ALIGN_2_VALUE}) and a PAGE_COUNT_OFFSET bytes offset
       * (with possible addition of {@link SasFileConstants#ALIGN_1_VALUE}).
       */
-    val PAGE_COUNT_OFFSET = 204L
+    val PageCountOffset = 204L
     /**
       * The sas7bdat file stores the number of its pages as an int or long value (depending on
       * {@link SasFileConstants#ALIGN_2_VALUE}) with the length of PAGE_COUNT_LENGTH bytes (with possible addition of
       * {@link SasFileConstants#ALIGN_2_VALUE}) and a {@link SasFileConstants#PAGE_COUNT_OFFSET} bytes offset
       * (with possible addition of {@link SasFileConstants#ALIGN_1_VALUE}).
       */
-    val PAGE_COUNT_LENGTH = 4
+    val PageCountLength = 4
     /**
       * The sas7bdat file stores the name of SAS version in which the sas7bdat was created with the length of
       * {@link SasFileConstants#SAS_RELEASE_LENGTH} bytes and a SAS_RELEASE_OFFSET bytes offset (with possible addition
       * of {@link SasFileConstants#ALIGN_1_VALUE} and {@link SasFileConstants#ALIGN_2_VALUE}).
       */
-    val SAS_RELEASE_OFFSET = 216L
+    val SasReleaseOffset = 216L
     /**
       * The sas7bdat file stores the name of SAS version in which the sas7bdat was created with the length of
       * SAS_RELEASE_LENGTH bytes and a {@link SasFileConstants#SAS_RELEASE_OFFSET} bytes offset (with possible addition
       * of {@link SasFileConstants#ALIGN_1_VALUE} and {@link SasFileConstants#ALIGN_2_VALUE}).
       */
-    val SAS_RELEASE_LENGTH = 8
+    val SasReleaseLength = 8
     /**
       * The sas7bdat file stores the name of the server version on which the sas7bdat was created with the length of
       * {@link SasFileConstants#SAS_SERVER_TYPE_LENGTH} bytes and a SAS_SERVER_TYPE_OFFSET bytes offset (with possible
       * addition of {@link SasFileConstants#ALIGN_1_VALUE} and {@link SasFileConstants#ALIGN_2_VALUE}).
       */
-    val SAS_SERVER_TYPE_OFFSET = 224L
+    val SasServerTypeOffset = 224L
     /**
       * The sas7bdat file stores the name of the server version on which the sas7bdat was created with the length of
       * SAS_SERVER_TYPE_LENGTH bytes and a {@link SasFileConstants#SAS_SERVER_TYPE_OFFSET} bytes offset (with possible
       * addition of {@link SasFileConstants#ALIGN_1_VALUE} and {@link SasFileConstants#ALIGN_2_VALUE}).
       */
-    val SAS_SERVER_TYPE_LENGTH = 16
+    val SasServerTypeLength = 16
     /**
       * The sas7bdat file stores the version of the OS in which the sas7bdat was created with the length of
       * {@link SasFileConstants#OS_VERSION_NUMBER_LENGTH} bytes and a OS_VERSION_NUMBER_OFFSET bytes offset
       * (with possible addition of {@link SasFileConstants#ALIGN_1_VALUE} and {@link SasFileConstants#ALIGN_2_VALUE}).
       */
-    val OS_VERSION_NUMBER_OFFSET = 240L
+    val OsVersionNumberOffset = 240L
     /**
       * The sas7bdat file stores the version of the OS in which the sas7bdat was created with the length of
       * OS_VERSION_NUMBER_LENGTH bytes and a {@link SasFileConstants#OS_VERSION_NUMBER_OFFSET} bytes offset (with
       * possible addition of {@link SasFileConstants#ALIGN_1_VALUE} and {@link SasFileConstants#ALIGN_2_VALUE}).
       */
-    val OS_VERSION_NUMBER_LENGTH = 16
+    val OsVersionNumberLength = 16
     /**
       * The sas7bdat file stores the name of the OS in which the sas7bdat was created with the length of
       * {@link SasFileConstants#OS_MAKER_LENGTH} bytes and a OS_MAKER_OFFSET bytes offset (with possible addition of
@@ -377,7 +377,7 @@ trait SasFileConstants {
       * bytes and a {@link SasFileConstants#OS_NAME_OFFSET} bytes offset (with possible addition of
       * {@link SasFileConstants#ALIGN_1_VALUE} and {@link SasFileConstants#ALIGN_2_VALUE}).
       */
-    val OS_MAKER_OFFSET = 256L
+    val OsMarkerOffset = 256L
     /**
       * The sas7bdat file stores the name of the OS in which the sas7bdat was created with the length of OS_MAKER_LENGTH
       * bytes and a {@link SasFileConstants#OS_MAKER_OFFSET} bytes offset (with possible addition of
@@ -386,7 +386,7 @@ trait SasFileConstants {
       * bytes and a {@link SasFileConstants#OS_NAME_OFFSET} bytes offset (with possible addition of
       * {@link SasFileConstants#ALIGN_1_VALUE} and {@link SasFileConstants#ALIGN_2_VALUE}).
       */
-    val OS_MAKER_LENGTH = 16
+    val OsMarkerLength = 16
     /**
       * The sas7bdat file stores the name of the OS in which the sas7bdat was created with the length of
       * {@link SasFileConstants#OS_NAME_LENGTH} bytes and a OS_NAME_OFFSET bytes offset (with possible addition of
@@ -395,7 +395,7 @@ trait SasFileConstants {
       * bytes and a {@link SasFileConstants#OS_MAKER_OFFSET} bytes offset (with possible addition of
       * {@link SasFileConstants#ALIGN_1_VALUE} and {@link SasFileConstants#ALIGN_2_VALUE}).
       */
-    val OS_NAME_OFFSET = 272L
+    val OsNameOffset = 272L
     /**
       * The sas7bdat file stores the name of the OS in which the sas7bdat was created with the length of OS_NAME_LENGTH
       * bytes and a {@link SasFileConstants#OS_NAME_OFFSET} bytes offset (with possible addition of
@@ -404,27 +404,27 @@ trait SasFileConstants {
       * bytes and a {@link SasFileConstants#OS_MAKER_OFFSET} bytes offset (with possible addition of
       * {@link SasFileConstants#ALIGN_1_VALUE} and {@link SasFileConstants#ALIGN_2_VALUE}).
       */
-    val OS_NAME_LENGTH = 16
+    val OsNameLength = 16
     /**
       * An offset in bytes from the start of the page - for sas7bdat files created in the 32-bit version of SAS
       * (see {@link SasFileConstants#ALIGN_2_VALUE}). Added to all offsets within a page.
       */
-    val PAGE_BIT_OFFSET_X86 = 16
+    val PageBitOffsetX86 = 16
     /**
       * An offset in bytes from the start of the page - for sas7bdat files created in the 64-bit version of SAS
       * (see {@link SasFileConstants#ALIGN_2_VALUE}). Added to all offsets within a page.
       */
-    val PAGE_BIT_OFFSET_X64 = 32
+    val PageBitOffsetX64 = 32
     /**
       * The length in bytes of one subheader pointer ({@link SasFileParser.SubheaderPointer}) of a sas7bdat file
       * created in the 32-bit version of SAS (see {@link SasFileConstants#ALIGN_2_VALUE}).
       */
-    val SUBHEADER_POINTER_LENGTH_X86 = 12
+    val SubheaderPointerLengthX86 = 12
     /**
       * The length in bytes of one subheader pointer ({@link SasFileParser.SubheaderPointer}) of a sas7bdat file
       * created in the 64-bit version of SAS (see {@link SasFileConstants#ALIGN_2_VALUE}).
       */
-    val SUBHEADER_POINTER_LENGTH_X64 = 24
+    val SubheaderPointerLengthX64 = 24
     /**
       * The sas7bdat file stores the type of page as a short value with the length of
       * {@link SasFileConstants#PAGE_TYPE_LENGTH} bytes and a PAGE_TYPE_OFFSET bytes offset (with addition of
@@ -494,7 +494,7 @@ trait SasFileConstants {
       * offset (adding {@link SasFileConstants#PAGE_BIT_OFFSET_X86} or {@link SasFileConstants#PAGE_BIT_OFFSET_X64})
       * from the beginning of the page.
       */
-    val SUBHEADER_POINTERS_OFFSET = 8
+    val SubheaderPointersOffset = 8
     /**
       * If the {@link SasFileParser.SubheaderPointer#compression} value of a subheader equals to TRUNCATED_SUBHEADER_ID
       * then it does not contain useful information.
@@ -540,7 +540,7 @@ trait SasFileConstants {
       * The number of bytes taken by the value denoting the length of the text block with information about
       * file compression and table rows (name, label, format).
       */
-    val TEXT_BLOCK_SIZE_LENGTH = 2
+    val TextBlockSizeLength = 2
     /**
       * A substring that appears in the text block with information about file compression and table rows
       * (name, label, format) if Run Length Encoding is used.
@@ -827,29 +827,29 @@ trait SasFileConstants {
     /**
       * The number of seconds in a minute.
       */
-    val SECONDS_IN_MINUTE = 60
+    val SecondsInMinute = 60
     /**
       * The number of minutes in an hour.
       */
-    val MINUTES_IN_HOUR = 60
+    val MinutesInHour = 60
     /**
       * The number of hours in a day.
       */
-    val HOURS_IN_DAY = 24
+    val HoursInDay = 24
     /**
       * The number of days in a non-leap year.
       */
-    val DAYS_IN_YEAR = 365
+    val DaysInYear = 365
     /**
       * The difference in days between 01/01/1960 (the dates starting point in SAS) and 01/01/1970 (the dates starting
       * point in Java).
       */
-    val START_DATES_DAYS_DIFFERENCE  = DAYS_IN_YEAR * 10 + 3
+    val StartDatesDaysDifference = DaysInYear * 10 + 3
     /**
       * The difference in seconds between 01/01/1960 (the dates starting point in SAS) and 01/01/1970 (the dates starting
       * point in Java).
       */
-    val START_DATES_SECONDS_DIFFERENCE = SECONDS_IN_MINUTE * MINUTES_IN_HOUR * HOURS_IN_DAY * START_DATES_DAYS_DIFFERENCE
+    val StartDatesSecondsDifference = SecondsInMinute * MinutesInHour * HoursInDay * StartDatesDaysDifference
     /**
       * The date formats to store the day, month, and year. Appear in the data of the
       * {@link SasFileParser.FormatAndLabelSubheader} subheader and are stored in {@link com.epam.parso.Column#format}.
