@@ -499,7 +499,7 @@ trait SasFileConstants {
       * If the {@link SasFileParser.SubheaderPointer#compression} value of a subheader equals to TRUNCATED_SUBHEADER_ID
       * then it does not contain useful information.
       */
-    val TRUNCATED_SUBHEADER_ID = 1
+    val TruncatedSubheaderId = 1
     /**
       * A subheader with compressed data has two parameters:
       * its {@link SasFileParser.SubheaderPointer#compression} should equal to COMPRESSED_SUBHEADER_ID and its
@@ -554,7 +554,7 @@ trait SasFileConstants {
     /**
       * The length of the column name pointer in bytes.
       */
-    val COLUMN_NAME_POINTER_LENGTH = 8
+    val ColumnNamePointerLength = 8
     /**
       * For each table column, the sas7bdat file stores the index of the
       * {@link SasFileParser.ColumnTextSubheader} subheader whose text block contains the name
@@ -564,7 +564,7 @@ trait SasFileConstants {
       * + column number * {@link SasFileConstants#COLUMN_NAME_POINTER_LENGTH} + size of the value type (int or long
       * depending on the {@link SasFileConstants#ALIGN_2_VALUE} value).
       */
-    val COLUMN_NAME_TEXT_SUBHEADER_OFFSET = 0L
+    val ColumnNameTextSubheaderOffset = 0L
     /**
       * For each table column, the sas7bdat file stores the index of the
       * {@link SasFileParser.ColumnTextSubheader} subheader whose text block contains the name
@@ -574,7 +574,7 @@ trait SasFileConstants {
       * + column number * {@link SasFileConstants#COLUMN_NAME_POINTER_LENGTH} + size of the value type (int or long
       * depending on the {@link SasFileConstants#ALIGN_2_VALUE} value).
       */
-    val COLUMN_NAME_TEXT_SUBHEADER_LENGTH = 2
+    val ColumnNameTextSubheaderLength = 2
     /**
       * For each table column, the sas7bdat file stores the offset (in symbols) of the column name from the beginning
       * of the text block of the {@link SasFileParser.ColumnTextSubheader} subheader (see
@@ -585,7 +585,7 @@ trait SasFileConstants {
       * + column number * {@link SasFileConstants#COLUMN_NAME_POINTER_LENGTH} + size of the value type (int or long
       * depending on the {@link SasFileConstants#ALIGN_2_VALUE} value).
       */
-    val COLUMN_NAME_OFFSET_OFFSET = 2L
+    val ColumnNameOffsetOffset = 2L
     /**
       * For each table column, the sas7bdat file stores the offset (in symbols) of the column name from the beginning
       * of the text block of the {@link SasFileParser.ColumnTextSubheader} subheader (see
@@ -595,7 +595,7 @@ trait SasFileConstants {
       * + column number * {@link SasFileConstants#COLUMN_NAME_POINTER_LENGTH} + size of the value type (int or long
       * depending on the {@link SasFileConstants#ALIGN_2_VALUE} value).
       */
-    val COLUMN_NAME_OFFSET_LENGTH = 2
+    val ColumnNameOffsetLength = 2
     /**
       * For each table column, the sas7bdat file stores column name length (in symbols):
       * - with the length of {@link SasFileConstants#COLUMN_NAME_LENGTH_LENGTH} bytes,
@@ -605,7 +605,7 @@ trait SasFileConstants {
       * + column number * {@link SasFileConstants#COLUMN_NAME_POINTER_LENGTH} + size of the value type (int or long
       * depending on the {@link SasFileConstants#ALIGN_2_VALUE} value).
       */
-    val COLUMN_NAME_LENGTH_OFFSET = 4L
+    val ColumnNameLengthOffset = 4L
     /**
       * For each table column, the sas7bdat file stores column name length (in symbols):
       * - with the length of COLUMN_NAME_LENGTH_LENGTH bytes.
@@ -615,7 +615,7 @@ trait SasFileConstants {
       * + column number * {@link SasFileConstants#COLUMN_NAME_POINTER_LENGTH} + size of the value type (int or long
       * depending on the {@link SasFileConstants#ALIGN_2_VALUE} value).
       */
-    val COLUMN_NAME_LENGTH_LENGTH = 2
+    val ColumnNameLengthLength = 2
     /**
       * For every table column, the sas7bdat file stores the value (int or long depending on
       * {@link SasFileConstants#ALIGN_2_VALUE}) that defines the offset of data in the current column
@@ -626,7 +626,7 @@ trait SasFileConstants {
       * + the size of value type (int or long depending on {@link SasFileConstants#ALIGN_2_VALUE})
       * from the beginning of the {@link SasFileParser.ColumnAttributesSubheader} subheader.
       */
-    val COLUMN_DATA_OFFSET_OFFSET = 8L
+    val ColumnDataOffsetOffset = 8L
     /**
       * For every table column, the sas7bdat file stores the denotation (in bytes) of data length in a column:
       * - at an offset measured from the beginning of the {@link SasFileParser.ColumnAttributesSubheader} subheader
@@ -636,7 +636,7 @@ trait SasFileConstants {
       * from the beginning of the {@link SasFileParser.ColumnAttributesSubheader} subheader,
       * - with the length of {@link SasFileConstants#COLUMN_DATA_LENGTH_LENGTH} bytes.
       */
-    val COLUMN_DATA_LENGTH_OFFSET = 8L
+    val ColumnDataLengthOffset = 8L
     /**
       * For every table column, the sas7bdat file stores the denotation (in bytes) of data length in a column:
       * - at an offset measured from the beginning of the {@link SasFileParser.ColumnAttributesSubheader} subheader
@@ -646,7 +646,7 @@ trait SasFileConstants {
       * from the beginning of the {@link SasFileParser.ColumnAttributesSubheader} subheader,
       * - with the length of COLUMN_DATA_LENGTH_LENGTH bytes.
       */
-    val COLUMN_DATA_LENGTH_LENGTH = 4
+    val ColumnDataLengthLength = 4
     /**
       * For every table column, the sas7bdat file stores the data type of a column:
       * - with the length of {@link SasFileConstants#COLUMN_TYPE_LENGTH} bytes.
@@ -657,7 +657,7 @@ trait SasFileConstants {
       * from the beginning of the {@link SasFileParser.ColumnAttributesSubheader} subheader,
       * If type=1, then the column stores numeric values, if type=0, the column stores text.
       */
-    val COLUMN_TYPE_OFFSET = 14L
+    val ColumnTypeOffset = 14L
     /**
       * For every table column, the sas7bdat file stores the data type of a column:
       * - with the length of COLUMN_TYPE_LENGTH bytes.
@@ -668,7 +668,7 @@ trait SasFileConstants {
       * from the beginning of the {@link SasFileParser.ColumnAttributesSubheader} subheader,
       * If type=1, then the column stores numeric values, if type=0, the column stores text.
       */
-    val COLUMN_TYPE_LENGTH = 1
+    val ColumnTypeLength = 1
     /**
       * For some table column, the sas7bdat file stores width of format:
       * - with the length of {@link SasFileConstants#COLUMN_FORMAT_WIDTH_OFFSET_LENGTH} bytes,

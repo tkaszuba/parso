@@ -20,11 +20,11 @@ trait ParserMessageConstants {
   /**
     * Warn info if 'null' is provided as the file compression literal.
     */
-  val NULL_COMPRESSION_LITERAL = "Null provided as the file compression literal, assuming no compression"
+  val NullCompressionLiteral = "Null provided as the file compression literal, assuming no compression"
   /**
     * Debug info if no supported compression literal is found.
     */
-  val NO_SUPPORTED_COMPRESSION_LITERAL = "No supported compression literal found, assuming no compression"
+  val NoSupportedCompressionLiteral = "No supported compression literal found, assuming no compression"
   /**
     * Error string if list of columns does not contain specified column name.
     */

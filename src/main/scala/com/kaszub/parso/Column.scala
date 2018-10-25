@@ -12,3 +12,5 @@ package com.kaszub.parso
   * @param length the column length
   */
 case class Column (id : Int, name : String, label: String, format : ColumnFormat, _type : Class[_], length: Int)
+
+case class ColumnAttributes(offset: Long, length: Int, _type: Class[_])

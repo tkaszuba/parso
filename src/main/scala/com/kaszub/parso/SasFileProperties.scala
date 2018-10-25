@@ -28,20 +28,22 @@ import java.time.{ZonedDateTime}
   * @param columnsCount      The number of columns in the table.
   *
   */
-case class SasFileProperties(isU64: Boolean = false, compressionMethod: String = null, endianness: Int = 0,
+case class SasFileProperties(isU64: Boolean = false, compressionMethod: Option[String] = None, endianness: Int = 0,
                              encoding: String = null, sessionEncoding: String = null, name: String = null,
                              fileType: String = null, dateCreated: ZonedDateTime = null, dateModified: ZonedDateTime = null,
                              sasRelease: String = null, serverType: String = null, osName: String = null,
                              osType: String = null, headerLength: Int = 0, pageLength: Int = 0,
                              pageCount: Long = 0L, rowLength: Long = 0L, rowCount: Long = 0L,
-                             mixPageRowCount: Long = 0L, columnsCount: Long = 0L) {
+                             mixPageRowCount: Long = 0L, columnsCount: Long = 0L, columnsNamesBytes: Seq[Seq[Byte]] = Seq(Seq()),
+                             columnNames: Seq[Either[String, ColumnMissingInfo]] = Seq(),
+                             columnAttributes: Seq[ColumnAttributes] = Seq()) {
 
   /**
     * Perform a copy of the properties
     *
     * @return result new Sas file properties.
     */
-  private def copy(isU64: Boolean = this.isU64, compressionMethod: String = this.compressionMethod,
+  private def copy(isU64: Boolean = this.isU64, compressionMethod: Option[String] = this.compressionMethod,
                    endianness: Int = this.endianness, encoding: String = this.encoding,
                    sessionEncoding: String = this.sessionEncoding, name: String = this.name,
                    fileType: String = this.fileType, dateCreated: ZonedDateTime = this.dateCreated,
@@ -50,11 +52,14 @@ case class SasFileProperties(isU64: Boolean = false, compressionMethod: String =
                    osType: String = this.osType, headerLength: Int = this.headerLength,
                    pageLength: Int = this.pageLength, pageCount: Long = this.pageCount,
                    rowLength: Long = this.rowLength, rowCount: Long = this.rowCount,
-                   mixPageRowCount: Long = this.mixPageRowCount, columnsCount: Long = this.columnsCount) =
+                   mixPageRowCount: Long = this.mixPageRowCount, columnsCount: Long = this.columnsCount,
+                   columnNamesBytes: Seq[Seq[Byte]] = this.columnsNamesBytes,
+                   columnNames: Seq[Either[String, ColumnMissingInfo]] = this.columnNames,
+                   columnAttributes: Seq[ColumnAttributes] = this.columnAttributes) =
     SasFileProperties(
       isU64, compressionMethod, endianness, encoding, sessionEncoding, name, fileType, dateCreated, dateModified,
       sasRelease, serverType, osName, osType, headerLength, pageLength, pageCount, rowLength, rowCount,
-      mixPageRowCount, columnsCount
+      mixPageRowCount, columnsCount, columnNamesBytes, columnNames, columnAttributes
     )
 
   /**
@@ -71,7 +76,7 @@ case class SasFileProperties(isU64: Boolean = false, compressionMethod: String =
     * @param val value to be set.
     * @return result new Sas file properties.
     */
-  def setCompressionMethod(value: String): SasFileProperties = copy(compressionMethod = value)
+  def setCompressionMethod(value: Option[String]): SasFileProperties = copy(compressionMethod = value)
 
   /**
     * Set the compression method and return new properties
@@ -122,7 +127,29 @@ case class SasFileProperties(isU64: Boolean = false, compressionMethod: String =
     */
   def setColumnsCount(value: Long): SasFileProperties = copy(columnsCount = value)
 
+  /**
+    * Set the column names bytes and return new properties
+    *
+    * @param val value to be set.
+    * @return result new Sas file properties.
+    */
+  def setColumnsNamesBytes(value: Seq[Seq[Byte]]): SasFileProperties = copy(columnNamesBytes = value)
+
+  /**
+    * Set the column names and return new properties
+    *
+    * @param val value to be set.
+    * @return result new Sas file properties.
+    */
+  def setColumnsNames(value: Seq[Either[String, ColumnMissingInfo]]): SasFileProperties = copy(columnNames = value)
+
+  /**
+    * Set the column attributes and return new properties
+    *
+    * @param val value to be set.
+    * @return result new Sas file properties.
+    */
+  def setColumnsAttributes(value: Seq[ColumnAttributes]): SasFileProperties = copy(columnAttributes = value)
 
   def isCompressed: Boolean = compressionMethod != null
-
 }
