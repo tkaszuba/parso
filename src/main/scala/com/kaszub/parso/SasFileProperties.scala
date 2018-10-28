@@ -37,7 +37,7 @@ case class SasFileProperties(isU64: Boolean = false, compressionMethod: Option[S
                              mixPageRowCount: Long = 0L, columnsCount: Long = 0L, columnsNamesBytes: Seq[Seq[Byte]] = Seq(Seq()),
                              columnNames: Seq[Either[String, ColumnMissingInfo]] = Seq(),
                              columnAttributes: Seq[ColumnAttributes] = Seq(), column: Option[Column] = None,
-                             row: Seq[Any] = Seq()) {
+                             columns: Seq[Column] = Seq(), row: Seq[Any] = Seq()) {
 
   /**
     * Perform a copy of the properties
@@ -57,11 +57,11 @@ case class SasFileProperties(isU64: Boolean = false, compressionMethod: Option[S
                    columnNamesBytes: Seq[Seq[Byte]] = this.columnsNamesBytes,
                    columnNames: Seq[Either[String, ColumnMissingInfo]] = this.columnNames,
                    columnAttributes: Seq[ColumnAttributes] = this.columnAttributes,
-                   column: Option[Column] = this.column, row: Seq[Any] = this.row) =
+                   column: Option[Column] = this.column, columns: Seq[Column] = this.columns, row: Seq[Any] = this.row) =
     SasFileProperties(
       isU64, compressionMethod, endianness, encoding, sessionEncoding, name, fileType, dateCreated, dateModified,
       sasRelease, serverType, osName, osType, headerLength, pageLength, pageCount, rowLength, rowCount,
-      mixPageRowCount, columnsCount, columnNamesBytes, columnNames, columnAttributes, column, row
+      mixPageRowCount, columnsCount, columnNamesBytes, columnNames, columnAttributes, column, columns, row
     )
 
   /**

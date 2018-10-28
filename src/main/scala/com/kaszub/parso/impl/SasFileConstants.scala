@@ -505,14 +505,14 @@ trait SasFileConstants {
       * its {@link SasFileParser.SubheaderPointer#compression} should equal to COMPRESSED_SUBHEADER_ID and its
       * {@link SasFileParser.SubheaderPointer#type} should equal to {@link SasFileConstants#COMPRESSED_SUBHEADER_TYPE}.
       */
-    val COMPRESSED_SUBHEADER_ID = 4
+    val CompressedSubheaderId = 4
     /**
       * A Subheader with compressed data has two parameters:
       * its {@link SasFileParser.SubheaderPointer#compression} should equal to
       * {@link SasFileConstants#COMPRESSED_SUBHEADER_ID} and its {@link SasFileParser.SubheaderPointer#type}
       * should equal to COMPRESSED_SUBHEADER_TYPE.
       */
-    val COMPRESSED_SUBHEADER_TYPE = 1
+    val CompressedSubheaderType = 1
     /**
       * The number of bits in a byte.
       */

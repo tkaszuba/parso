@@ -768,7 +768,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
             ColumnMissingInfo(0, textSubheaderIndexForFormat, columnFormatOffset, columnFormatLength, MissingInfoType.FORMAT))
       }
 
-      logger.debug(ColumnFormatMsg, columnFormatName match {case Left(v) => v case _ => "FORMAT MISSING"})
+      logger.debug(ColumnFormatMsg.format(columnFormatName match {case Left(v) => v case _ => "FORMAT MISSING"}))
 
       properties.setColumn(
         Option(
@@ -822,7 +822,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
 
   case class MetadataReadResult(subheaderIndex: Option[SubheaderIndexes], pointer: SubheaderPointer, properties: SasFileProperties)
 
-  case class MetadataReadResults(results: Seq[MetadataReadResult] = Seq())
+//  case class MetadataReadResults(results: Map[Option[SubheaderIndexes], Seq[SasFileProperties]] = Map())
 
   /**
     * The result of parsing a SAS file
@@ -1084,31 +1084,30 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
   @throws[IOException]
   def processSasFilePageMeta(fileStream: InputStream, header: PageHeader, properties: SasFileProperties): SasFileProperties = {
 
-    val res: MetadataReadResults =
+    val res: Map[Option[SubheaderIndexes], Seq[SasFileProperties]] =
       if ((header.pageType == PageMetaType1) || (header.pageType == PageMetaType2) || (header.pageType == PageMixType))
         readPageMetadata(fileStream, header, properties)
       else
-        MetadataReadResults()
+        Map()
 
-    val map = res.results.groupMap(_.subheaderIndex match {case Some(e) => e})(_.properties)
+    //val map = res.results.groupMap(_.subheaderIndex)(_.properties)
 
     properties.copy(
-      rowLength = map(SubheaderIndexes.RowSizeSubheaderIndex).head.rowLength,
-      rowCount = map(SubheaderIndexes.RowSizeSubheaderIndex).head.rowCount,
-      mixPageRowCount = map(SubheaderIndexes.RowSizeSubheaderIndex).head.mixPageRowCount,
-      columnsCount = map(SubheaderIndexes.ColumnSizeSubheaderIndex).head.columnsCount,
-      compressionMethod = map(SubheaderIndexes.ColumnTextSubheaderIndex).head.compressionMethod,
-      columnNamesBytes = map(SubheaderIndexes.ColumnTextSubheaderIndex).head.columnsNamesBytes,
-      columnNames = map(SubheaderIndexes.ColumnNameSubheaderIndex).head.columnNames,
-      columnAttributes = map(SubheaderIndexes.ColumnAttributesSubheaderIndex).head.columnAttributes,
-      column = map(SubheaderIndexes.FormatAndLabelSubheaderIndex).head.column //where's the rest of the column formats???
+      rowLength = res(Some(SubheaderIndexes.RowSizeSubheaderIndex)).head.rowLength,
+      rowCount = res(Some(SubheaderIndexes.RowSizeSubheaderIndex)).head.rowCount,
+      mixPageRowCount = res(Some(SubheaderIndexes.RowSizeSubheaderIndex)).head.mixPageRowCount,
+      columnsCount = res(Some(SubheaderIndexes.ColumnSizeSubheaderIndex)).head.columnsCount,
+      compressionMethod = res(Some(SubheaderIndexes.ColumnTextSubheaderIndex)).head.compressionMethod,
+      columnNamesBytes = res(Some(SubheaderIndexes.ColumnTextSubheaderIndex)).head.columnsNamesBytes,
+      columnNames = res(Some(SubheaderIndexes.ColumnNameSubheaderIndex)).head.columnNames,
+      columnAttributes = res(Some(SubheaderIndexes.ColumnAttributesSubheaderIndex)).head.columnAttributes,
+      columns = res(Some(SubheaderIndexes.FormatAndLabelSubheaderIndex)).flatMap(_.column) //where's the rest of the column formats???
     )
 
 //    val containsDataSubheader =
 //      !res.results.filter(_.subheaderIndex.
 //        flatMap(f => Some(f == SubheaderIndexes.DataSubheaderIndex)).getOrElse(false)).isEmpty
 
-    properties
     //header.pageType == PageDataType || header.pageType == PageMixType || map.contains(SubheaderIndexes.DataSubheaderIndex)
 
   }
@@ -1123,8 +1122,9 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
     * @throws IOException if reading from the { @link SasFileParser#sasFileStream} string is impossible.
     */
   @throws[IOException]
-  def readPageMetadata(fileStream: InputStream, header: PageHeader, properties: SasFileProperties): MetadataReadResults = {
+  def readPageMetadata(fileStream: InputStream, header: PageHeader, properties: SasFileProperties): Map[Option[SubheaderIndexes], Seq[SasFileProperties]] = {
 
+    //parallizable
     val results = (0 until header.subheaderCount).map(i => {
 
       val subheaderPointer = readSubheaderPointer(fileStream, properties, i)
@@ -1134,24 +1134,38 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
         val subheaderIndex = chooseSubheaderClass(properties, subheaderSignature, subheaderPointer.compression, subheaderPointer._type)
 
         val newProperties: SasFileProperties = {
-          if (subheaderIndex != SubheaderIndexes.DataSubheaderIndex && subheaderIndex != SubheaderIndexes.ColumnNameSubheaderIndex) {
-              logger.debug(SubheaderProcessFunctionName, subheaderIndex)
-              subheaderIndexToClass(SubheaderIndexes(i)).processSubheader(fileStream, properties, subheaderPointer.offset, subheaderPointer.length)
+          if (subheaderIndex.isDefined) {
+            logger.debug(SubheaderProcessFunctionName.format(subheaderIndex.get))
+            if (subheaderIndex != Some(SubheaderIndexes.DataSubheaderIndex) && subheaderIndex != Some(SubheaderIndexes.ColumnNameSubheaderIndex))
+              subheaderIndexToClass(subheaderIndex.get).processSubheader(fileStream, properties, subheaderPointer.offset, subheaderPointer.length)
+            else
+              properties
           }
-          else
+          else {
+            logger.debug(UnknownSubheaderSignature)
             properties
+          }
         }
-        MetadataReadResult(Some(subheaderIndex), subheaderPointer, newProperties)
+        MetadataReadResult(subheaderIndex, subheaderPointer, newProperties)
       }
-      else {
-        logger.debug(UnknownSubheaderSignature)
+      else
         MetadataReadResult(None, subheaderPointer, properties)
-      }
     })
 
+    //Dependency between column name subheader and the text subheader, need to treat it seperatly
+    val col = results.groupBy(_.subheaderIndex)//(_.properties)
+    val textProperties = col(Some(SubheaderIndexes.ColumnTextSubheaderIndex)).head.properties
+    val pointer = col(Some(SubheaderIndexes.ColumnNameSubheaderIndex)).head.pointer
 
+    logger.debug(SubheaderProcessFunctionName.format(SubheaderIndexes.ColumnNameSubheaderIndex))
+    val colNameProperties = subheaderIndexToClass(SubheaderIndexes.ColumnNameSubheaderIndex).
+      processSubheader(fileStream, textProperties, pointer.offset, pointer.length)
 
-    MetadataReadResults(results)
+    col.keys.map(key => key match {
+      case Some(SubheaderIndexes.ColumnNameSubheaderIndex) => key -> Seq(colNameProperties)
+      case _ => key -> col(key).map(_.properties)
+    }).toMap
+
   }
 
   /**
@@ -1181,12 +1195,15 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
     * @param type the subheader type ({@link SubheaderPointer#_type})
     * @return an element from the  {@link SubheaderIndexes} enumeration that defines the type of the current subheader
     */
-  def chooseSubheaderClass(properties: SasFileProperties, signature: Long, compression: Int, _type: Int): SubheaderIndexes = {
-    if (properties.isCompressed && SubheaderSignatureToIndex.contains(signature) &&
-      (compression == COMPRESSED_SUBHEADER_ID || compression == 0) && _type == COMPRESSED_SUBHEADER_TYPE)
-      SubheaderIndexes.DataSubheaderIndex
+  def chooseSubheaderClass(properties: SasFileProperties, signature: Long, compression: Int, _type: Int): Option[SubheaderIndexes] = {
+    if (SubheaderSignatureToIndex.contains(signature)) {
+      if (properties.isCompressed && (compression == CompressedSubheaderId || compression == 0) && _type == CompressedSubheaderType)
+        Some(SubheaderIndexes.DataSubheaderIndex)
+      else
+        Some(SubheaderSignatureToIndex(signature))
+    }
     else
-      SubheaderSignatureToIndex(signature)
+      None
   }
 
   /**
