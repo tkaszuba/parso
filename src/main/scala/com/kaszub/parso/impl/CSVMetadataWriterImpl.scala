@@ -87,18 +87,32 @@ case class CSVMetadataWriterImpl(writer: Writer,
     columns.foreach(column => {
       writer.write(String.valueOf(column.id))
       writer.write(delimiter)
-      CSVUtil.checkSurroundByQuotesAndWrite(writer, delimiter, column.name)
+      CSVUtil.checkSurroundByQuotesAndWrite(writer, delimiter, column.name.getOrElse(""))
       writer.write(delimiter)
-      writer.write(column._type.getName.
-        replace(JavaNumberClassName, OutputNumberTypeName).
-        replace(JavaStringClassName, OutputStringTypeName))
+      writer.write(
+        column._type match {
+          case Some(value) => value.getName.
+            replace(JavaNumberClassName, OutputNumberTypeName).
+            replace(JavaStringClassName, OutputStringTypeName)
+          case _ => ""
+        }
+      )
       writer.write(delimiter)
       writer.write(String.valueOf(column.length))
       writer.write(delimiter)
       if (!column.format.isEmpty)
-        CSVUtil.checkSurroundByQuotesAndWrite(writer, delimiter, column.format.toString())
+        CSVUtil.checkSurroundByQuotesAndWrite(writer, delimiter,
+          column.format.name match {
+            case Left(value) => value
+            case _ => ""
+          }
+        )
       writer.write(delimiter)
-      CSVUtil.checkSurroundByQuotesAndWrite(writer, delimiter, column.label)
+      CSVUtil.checkSurroundByQuotesAndWrite(writer, delimiter,
+        column.label match {
+          case Left(value) => value
+          case _ => ""
+        })
       writer.write(endline)
     })
 

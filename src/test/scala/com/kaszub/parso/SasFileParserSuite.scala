@@ -15,13 +15,17 @@ class SasFileParserSuite extends FlatSpec with SasFileConstants {
   private val logger = Logger[this.type]
 
   private val DefaultFileName = "sas7bdat//all_rand_normal.sas7bdat"
+  private val NoCompressionFileName = "sas7bdat//charset_aara.sas7bdat"
   private val ColonFileName = "sas7bdat//colon.sas7bdat"
 
   private def DefaultFileNameStream: InputStream = new BufferedInputStream(
-    Thread.currentThread().getContextClassLoader().getResourceAsStream(DefaultFileName))
+    Thread.currentThread.getContextClassLoader.getResourceAsStream(DefaultFileName))
+
+  private def NoCompressionFileNameStream: InputStream = new BufferedInputStream(
+    Thread.currentThread.getContextClassLoader.getResourceAsStream(NoCompressionFileName))
 
   private def ColonFileNameStream: InputStream = new BufferedInputStream(
-    Thread.currentThread().getContextClassLoader().getResourceAsStream(ColonFileName))
+    Thread.currentThread.getContextClassLoader.getResourceAsStream(ColonFileName))
 
   "Reading bytes from a SAS file" should "return the proper bytes" in {
     val inputStream = DefaultFileNameStream
@@ -111,7 +115,7 @@ class SasFileParserSuite extends FlatSpec with SasFileConstants {
 
   "Reading the header from a SAS file" should "return the proper header info" in {
 
-    val ColonSasFileProperties = new SasFileProperties(
+    val ColonSasFileProperties = SasFileProperties(
       false, None, 1, "US-ASCII", null,
       "colon", "DATA",
       ZonedDateTime.of(
@@ -170,7 +174,7 @@ class SasFileParserSuite extends FlatSpec with SasFileConstants {
     val fileHeader = SasFileParser.readSasFileHeader(file)
     val pageHeader = SasFileParser.readPageHeader(file, fileHeader.properties)
 
-    val pointers = (0 to pageHeader.subheaderCount - 1).map(
+    val pointers = (0 until pageHeader.subheaderCount).map(
       SasFileParser.readSubheaderPointer(file, fileHeader.properties, _))
 
     assert(pointers.length == pageHeader.subheaderCount)
@@ -253,7 +257,7 @@ class SasFileParserSuite extends FlatSpec with SasFileConstants {
     file.close()
   }
 
-  it should "return the proper properties for a column text subheader" in {
+  it should "return the proper properties for a column text subheader with char compression" in {
     val properties = getSubheaderProperties(SubheaderIndexes.ColumnTextSubheaderIndex)
 
     assert(properties.compressionMethod == Option("SASYZCRL"))
@@ -261,9 +265,24 @@ class SasFileParserSuite extends FlatSpec with SasFileConstants {
     assert(properties.columnsNamesBytes(0).size == 76)
   }
 
+  it should "return the proper properties for a column text subheader with no compression" in {
+    val file = NoCompressionFileNameStream
+
+    val fileHeader = SasFileParser.readSasFileHeader(file)
+    val pointer = SasFileParser.readSubheaderPointer(file, fileHeader.properties, SubheaderIndexes.SubheaderCountsSubheaderIndex.id)
+
+    val properties = subheaderIndexToClass(SubheaderIndexes.SubheaderCountsSubheaderIndex)
+      .processSubheader(file, fileHeader.properties, pointer.offset, pointer.length)
+
+    assert(properties.compressionMethod == None)
+    assert(properties.columnsNamesBytes.size == 1)
+    assert(properties.columnsNamesBytes(0).size == 0)
+  }
+
+
   it should "return the proper column names" in {
     val file = DefaultFileNameStream
-    var columns = Seq(Left("x1"), Left("x2"), Left("x3"), Left("x4"), Left("x5"), Left("x6"), Left("x7"), Left("x8"))
+    val columns = Seq(Left("x1"), Left("x2"), Left("x3"), Left("x4"), Left("x5"), Left("x6"), Left("x7"), Left("x8"))
 
     val fileHeader = SasFileParser.readSasFileHeader(file)
     val pointerText = SasFileParser.readSubheaderPointer(file, fileHeader.properties, SubheaderIndexes.ColumnTextSubheaderIndex.id)
@@ -284,6 +303,79 @@ class SasFileParserSuite extends FlatSpec with SasFileConstants {
 
     assert(properties.columnAttributes.size == 8)
   }
+
+  it should "return the proper column and format properties" in {
+    val file = DefaultFileNameStream
+
+    val fileHeader = SasFileParser.readSasFileHeader(file)
+    val pointerText = SasFileParser.readSubheaderPointer(file, fileHeader.properties, SubheaderIndexes.ColumnTextSubheaderIndex.id)
+    val propertiesText = subheaderIndexToClass(SubheaderIndexes.ColumnTextSubheaderIndex)
+      .processSubheader(file, fileHeader.properties, pointerText.offset, pointerText.length)
+
+    val pointer = SasFileParser.readSubheaderPointer(file, fileHeader.properties, SubheaderIndexes.FormatAndLabelSubheaderIndex.id)
+    val properties = subheaderIndexToClass(SubheaderIndexes.FormatAndLabelSubheaderIndex)
+      .processSubheader(file, propertiesText, pointer.offset, pointer.length)
+
+    assert(properties.column.get.format.toString == ".40.")
+    assert(properties.column.get.format.name == Right(ColumnMissingInfo(0,4,8,1, MissingInfoType.FORMAT)))
+    assert(properties.column.get.format.precision == 0)
+    assert(properties.column.get.format.width == 40)
+    assert(properties.column.get.label == Right(ColumnMissingInfo(0,5,0,2, MissingInfoType.LABEL)))
+
+    file.close()
+  }
+
+  it should "return the same properties when reading the list subheader" in {
+    val file = DefaultFileNameStream
+
+    val fileHeader = SasFileParser.readSasFileHeader(file)
+    val pointerText = SasFileParser.readSubheaderPointer(file, fileHeader.properties, SubheaderIndexes.ColumnTextSubheaderIndex.id)
+    val propertiesText = subheaderIndexToClass(SubheaderIndexes.ColumnTextSubheaderIndex)
+      .processSubheader(file, fileHeader.properties, pointerText.offset, pointerText.length)
+
+    val pointer = SasFileParser.readSubheaderPointer(file, fileHeader.properties, SubheaderIndexes.ColumnListSubheaderIndex.id)
+    val properties = subheaderIndexToClass(SubheaderIndexes.ColumnListSubheaderIndex)
+      .processSubheader(file, propertiesText, pointer.offset, pointer.length)
+
+    assert(properties == propertiesText)
+  }
+
+  it should "return the merged properties" in {
+    val file = DefaultFileNameStream
+
+    val fileHeader = SasFileParser.readSasFileHeader(file)
+    val pageHeader = SasFileParser.readPageHeader(file, fileHeader.properties)
+
+    val properties = SasFileParser.processSasFilePageMeta(file, pageHeader, fileHeader.properties)
+
+    assert(properties == null)
+
+  }
+
+  /*it should "return the proper row when reading the data row subheader" in {
+    val file = NoCompressionFileNameStream//DefaultFileNameStream
+
+    val fileHeader = SasFileParser.readSasFileHeader(file)
+
+    val pointerColumnSize = SasFileParser.readSubheaderPointer(file, fileHeader.properties, SubheaderIndexes.ColumnSizeSubheaderIndex.id)
+    val propertiesColumnSize = subheaderIndexToClass(SubheaderIndexes.ColumnSizeSubheaderIndex)
+      .processSubheader(file, fileHeader.properties, pointerColumnSize.offset, pointerColumnSize.length)
+
+    val pointerText = SasFileParser.readSubheaderPointer(file, propertiesColumnSize, SubheaderIndexes.ColumnTextSubheaderIndex.id)
+    val propertiesText = subheaderIndexToClass(SubheaderIndexes.ColumnTextSubheaderIndex)
+      .processSubheader(file, propertiesColumnSize, pointerText.offset, pointerText.length)
+
+    val pointerColAtt = SasFileParser.readSubheaderPointer(file, propertiesText, SubheaderIndexes.ColumnAttributesSubheaderIndex.id)
+    val propertiesColAtt = subheaderIndexToClass(SubheaderIndexes.ColumnAttributesSubheaderIndex)
+      .processSubheader(file, propertiesText, pointerColAtt.offset, pointerColAtt.length)
+
+    val pointerDataRow = SasFileParser.readSubheaderPointer(file, propertiesColAtt, SubheaderIndexes.DataSubheaderIndex.id)
+    val propertiesDataRow = subheaderIndexToClass(SubheaderIndexes.DataSubheaderIndex)
+      .processSubheader(file, propertiesColAtt, pointerDataRow.offset, pointerDataRow.length)
+
+    assert(propertiesDataRow != null)
+  }*/
+
 
 
 

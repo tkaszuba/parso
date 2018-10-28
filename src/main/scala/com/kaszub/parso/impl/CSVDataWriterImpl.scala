@@ -59,7 +59,7 @@ case class CSVDataWriterImpl(writer: Writer,
   def writeColumnNames(columns: Seq[Column]): Unit = {
 
     for (i <- 0 to columns.size){
-      CSVUtil.checkSurroundByQuotesAndWrite(writer, delimiter, columns(i).name)
+      CSVUtil.checkSurroundByQuotesAndWrite(writer, delimiter, columns(i).name.getOrElse(""))
       if (i != columns.size - 1)
         writer.write(delimiter)
     }

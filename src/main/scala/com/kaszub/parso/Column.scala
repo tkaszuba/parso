@@ -11,6 +11,22 @@ package com.kaszub.parso
   *               String.class.
   * @param length the column length
   */
-case class Column (id : Int, name : String, label: String, format : ColumnFormat, _type : Class[_], length: Int)
+case class Column (
+                    id : Option[Int] = None,
+                    name : Option[String] = None,
+                    label: Either[String, ColumnMissingInfo],
+                    format : ColumnFormat,
+                    _type : Option[Class[_]] = None,
+                    length: Option[Int] = None) {
 
+  override def toString: String = {
+    s"id: %s name: %s label: %s format: %s _type: %s length: %s".format(
+      id.getOrElse(""),
+      name.getOrElse(""),
+      label match {case Left(v) => v case _ => ""},
+      format.toString,
+      _type match {case Some(v) => v.getName case _ => ""},
+      length.getOrElse(""))
+  }
+}
 case class ColumnAttributes(offset: Long, length: Int, _type: Class[_])

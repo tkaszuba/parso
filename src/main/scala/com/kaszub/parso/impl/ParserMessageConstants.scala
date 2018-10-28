@@ -8,11 +8,11 @@ trait ParserMessageConstants {
   /**
     * Error string if there are no available bytes in the input stream.
     */
-  val EMPTY_INPUT_STREAM = "There are no available bytes in the input stream."
+  val EmptyInputStream = "There are no available bytes in the input stream."
   /**
     * Error string if the sas7bdat file is invalid.
     */
-  val FILE_NOT_VALID = "Can not read metadata from sas7bdat file."
+  val FileNotValid = "Can not read metadata from sas7bdat file."
   /**
     * Debug info in case of an unknown subheader signature.
     */
@@ -28,7 +28,7 @@ trait ParserMessageConstants {
   /**
     * Error string if list of columns does not contain specified column name.
     */
-  val UNKNOWN_COLUMN_NAME = "Unknown column name"
+  val UnknownColumnName = "Unknown column name"
   /**
     * Debug info. Subheader count.
     */
@@ -44,9 +44,9 @@ trait ParserMessageConstants {
   /**
     * Debug info. Subheader process function name.
     */
-  val SubheaderProcessFunctionName = "Subheader process function name: {}"
+  val SubheaderProcessFunctionName = "Subheader process function name: %s"
   /**
     * Debug info. Column format.
     */
-  val COLUMN_FORMAT = "Column format: {}"
+  val ColumnFormatMsg = "Column format: %s"
 }

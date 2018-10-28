@@ -475,16 +475,16 @@ trait SasFileConstants {
       * The page type storing metadata as a set of subheaders. It can also store compressed row data in subheaders.
       * The sas7bdat format has two values that correspond to the page type 'meta'.
       */
-    val PAGE_META_TYPE_1 = 0
-    val PAGE_META_TYPE_2 = 16384
+    val PageMetaType1 = 0
+    val PageMetaType2 = 16384
     /**
       * The page type storing only data as a number of table rows.
       */
-    val PAGE_DATA_TYPE = 256
+    val PageDataType = 256
     /**
       * The page type storing metadata as a set of subheaders and data as a number of table rows.
       */
-    val PAGE_MIX_TYPE = 512
+    val PageMixType = 512
     /**
       * The page type amd.
       */
@@ -545,12 +545,12 @@ trait SasFileConstants {
       * A substring that appears in the text block with information about file compression and table rows
       * (name, label, format) if Run Length Encoding is used.
       */
-    val COMPRESS_CHAR_IDENTIFYING_STRING = "SASYZCRL"
+    val CompressCharIdentifyingString = "SASYZCRL"
     /**
       * A substring that appears in the text block with information about file compression and table rows
       * (name, label, format) if Ross Data compression is used.
       */
-    val COMPRESS_BIN_IDENTIFYING_STRING = "SASYZCR2"
+    val CompressBinIdentifyingString = "SASYZCR2"
     /**
       * The length of the column name pointer in bytes.
       */
@@ -676,7 +676,7 @@ trait SasFileConstants {
       * (int or long depending on {@link SasFileConstants#ALIGN_2_VALUE}) from
       * the beginning of the {@link SasFileParser.FormatAndLabelSubheader} subheader.
       */
-    val COLUMN_FORMAT_WIDTH_OFFSET = 8L
+    val ColumnFormatWidthOffset = 8L
     /**
       * For some table column, the sas7bdat file stores width of format:
       * - with the length of COLUMN_FORMAT_WIDTH_OFFSET_LENGTH bytes,
@@ -684,7 +684,7 @@ trait SasFileConstants {
       * (int or long depending on {@link SasFileConstants#ALIGN_2_VALUE}) from
       * the beginning of the {@link SasFileParser.FormatAndLabelSubheader} subheader.
       */
-    val COLUMN_FORMAT_WIDTH_OFFSET_LENGTH = 2
+    val ColumnFormatWidthOffsetLength = 2
     /**
       * For some table column, the sas7bdat file stores precision of format:
       * - with the length of {@link SasFileConstants#COLUMN_FORMAT_PRECISION_OFFSET_LENGTH} bytes,
@@ -692,7 +692,7 @@ trait SasFileConstants {
       * (int or long depending on {@link SasFileConstants#ALIGN_2_VALUE}) from
       * the beginning of the {@link SasFileParser.FormatAndLabelSubheader} subheader.
       */
-    val COLUMN_FORMAT_PRECISION_OFFSET = 10L
+    val ColumnFormatPrecisionOffset = 10L
     /**
       * For some table column, the sas7bdat file stores width of format:
       * - with the length of COLUMN_FORMAT_PRECISION_OFFSET_LENGTH bytes,
@@ -700,7 +700,7 @@ trait SasFileConstants {
       * + the size of value type (int or long depending on {@link SasFileConstants#ALIGN_2_VALUE}) from
       * the beginning of the {@link SasFileParser.FormatAndLabelSubheader} subheader.
       */
-    val COLUMN_FORMAT_PRECISION_OFFSET_LENGTH = 2
+    val ColumnFormatPrecisionOffsetLength = 2
     /**
       * For every table column, the sas7bdat file stores the index of
       * the {@link SasFileParser.ColumnTextSubheader} whose text block stores the column format:
@@ -709,7 +709,7 @@ trait SasFileConstants {
       * + 3 * the size of value types (int or long depending on {@link SasFileConstants#ALIGN_2_VALUE}) from
       * the beginning of the {@link SasFileParser.FormatAndLabelSubheader} subheader.
       */
-    val COLUMN_FORMAT_TEXT_SUBHEADER_INDEX_OFFSET = 22L
+    val ColumnFormatTextSubheaderIndexOffset = 22L
     /**
       * For every table column, the sas7bdat file stores the index of the
       * {@link SasFileParser.ColumnTextSubheader} whose text block stores the column format:
@@ -718,7 +718,7 @@ trait SasFileConstants {
       * + 3 * the size of value types (int or long depending on {@link SasFileConstants#ALIGN_2_VALUE}) from
       * the beginning of the {@link SasFileParser.FormatAndLabelSubheader} subheader.
       */
-    val COLUMN_FORMAT_TEXT_SUBHEADER_INDEX_LENGTH = 2
+    val ColumnFormatTextSubheaderIndexLength = 2
     /**
       * For every table column, the sas7bdat file stores the offset (in symbols) of the column format from
       * the beginning of the text block of the {@link SasFileParser.ColumnTextSubheader} subheader
@@ -728,7 +728,7 @@ trait SasFileConstants {
       * (int or long depending on {@link SasFileConstants#ALIGN_2_VALUE}) from the beginning of
       * the {@link SasFileParser.FormatAndLabelSubheader} subheader.
       */
-    val COLUMN_FORMAT_OFFSET_OFFSET = 24L
+    val ColumnFormatOffsetOffset = 24L
     /**
       * For every table column, the sas7bdat file stores the offset (in symbols) of the column format from
       * the beginning of the text block of the {@link SasFileParser.ColumnTextSubheader}
@@ -738,7 +738,7 @@ trait SasFileConstants {
       * + 3 * the size of value types (int or long depending on {@link SasFileConstants#ALIGN_2_VALUE}) from
       * the beginning of the {@link SasFileParser.FormatAndLabelSubheader} subheader.
       */
-    val COLUMN_FORMAT_OFFSET_LENGTH = 2
+    val ColumnFormatOffsetLength = 2
     /**
       * For every table column, the sas7bdat file stores the column format length (in symbols):
       * - with the length of {@link SasFileConstants#COLUMN_FORMAT_LENGTH_LENGTH} bytes,
@@ -746,7 +746,7 @@ trait SasFileConstants {
       * (int or long depending on {@link SasFileConstants#ALIGN_2_VALUE}) from the beginning of
       * the {@link SasFileParser.FormatAndLabelSubheader} subheader.
       */
-    val COLUMN_FORMAT_LENGTH_OFFSET = 26L
+    val ColumnFormatLengthOffset = 26L
 
     /**
       * For every table column, the sas7bdat file stores the column format length (in symbols):
@@ -755,7 +755,7 @@ trait SasFileConstants {
       * 3 * the size of value types (int or long depending on {@link SasFileConstants#ALIGN_2_VALUE})
       * from the beginning of the {@link SasFileParser.FormatAndLabelSubheader} subheader.
       */
-    val COLUMN_FORMAT_LENGTH_LENGTH = 2
+    val ColumnFormatLengthLength = 2
 
     /**
       * For every table column, the sas7bdat file stores the index of the
@@ -766,7 +766,7 @@ trait SasFileConstants {
       * + 3 * the size of value types (int or long depending on {@link SasFileConstants#ALIGN_2_VALUE}) from
       * the beginning of the {@link SasFileParser.FormatAndLabelSubheader} subheader.
       */
-    val COLUMN_LABEL_TEXT_SUBHEADER_INDEX_OFFSET = 28L
+    val ColumnLabelTextSubheaderIndexOffset = 28L
     /**
       * For every table column, the sas7bdat file stores the index of the
       * {@link SasFileParser.ColumnTextSubheader} subheader
@@ -776,7 +776,7 @@ trait SasFileConstants {
       * + 3 * the size of value types (int or long depending on {@link SasFileConstants#ALIGN_2_VALUE})
       * from the beginning of the {@link SasFileParser.FormatAndLabelSubheader} subheader.
       */
-    val COLUMN_LABEL_TEXT_SUBHEADER_INDEX_LENGTH = 2
+    val ColumnLabelTextSubheaderIndexLength = 2
     /**
       * For every table column, the sas7bdat file stores the column label`s offset (in symbols) from the beginning of
       * the text block where it belongs (see {@link SasFileConstants#COLUMN_FORMAT_TEXT_SUBHEADER_INDEX_OFFSET}):
@@ -785,7 +785,7 @@ trait SasFileConstants {
       * depending on {@link SasFileConstants#ALIGN_2_VALUE}) from the beginning of
       * the {@link SasFileParser.FormatAndLabelSubheader} subheader.
       **/
-    val COLUMN_LABEL_OFFSET_OFFSET = 30L
+    val ColumnLabelOffsetOffset = 30L
     /**
       * For every table column, the sas7bdat file stores the column label`s offset (in symbols) from the beginning of
       * the text block where it belongs (see {@link SasFileConstants#COLUMN_FORMAT_TEXT_SUBHEADER_INDEX_OFFSET}):
@@ -794,7 +794,7 @@ trait SasFileConstants {
       * of value types(int or long depending on {@link SasFileConstants#ALIGN_2_VALUE}) from the beginning of the
       * {@link SasFileParser.FormatAndLabelSubheader} subheader.
       **/
-    val COLUMN_LABEL_OFFSET_LENGTH = 2
+    val ColumnLabelOffsetLength = 2
     /**
       * For every table column, the sas7bdat file stores the length of the column label (in symbols):
       * - with the length of {@link SasFileConstants#COLUMN_LABEL_LENGTH_LENGTH} bytes.
@@ -802,7 +802,7 @@ trait SasFileConstants {
       * 3 * the size of value types (int or long depending on {@link SasFileConstants#ALIGN_2_VALUE})
       * from the beginning of the {@link SasFileParser.FormatAndLabelSubheader} subheader.
       */
-    val COLUMN_LABEL_LENGTH_OFFSET = 32L
+    val ColumnLabelLengthOffset = 32L
     /**
       * For every table column, the sas7bdat file stores the length of the column label (in symbols):
       * - with the length of COLUMN_LABEL_LENGTH_LENGTH bytes.
@@ -810,7 +810,7 @@ trait SasFileConstants {
       * 3 * the size of value types(int or long depending on {@link SasFileConstants#ALIGN_2_VALUE}) from
       * the beginning of the {@link SasFileParser.FormatAndLabelSubheader} subheader.
       */
-    val COLUMN_LABEL_LENGTH_LENGTH = 2
+    val ColumnLabelLengthLength = 2
     /**
       * Accuracy to define whether the numeric result of {@link SasFileParser#convertByteArrayToNumber(byte[])} is
       * a long or double value.

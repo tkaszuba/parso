@@ -12,11 +12,11 @@ class DataWriterUtilSuite extends FlatSpec {
   val PercentFormat = TestUtils.getConst[String](DataWriterUtil,"PercentFormat")
   val TimeFormats = TestUtils.getConst[Seq[String]](DataWriterUtil,"TimeFormatStrings")
 
-  val ColumnFormatNoPrecision = ColumnFormat("test", 1, 0)
-  val ColumnFormatWithPrecision = ColumnFormat("test", 1, 2)
-  val ColumnFormatPercentage = ColumnFormat(PercentFormat, 1, 2)
-  val ColumnFormatTime = ColumnFormat(TimeFormats.head, 1, 2)
-  val ColumnFormatDate = ColumnFormat(DateFormats.keys.head, 1, 2)
+  val ColumnFormatNoPrecision = ColumnFormat(Left("test"), 1, 0)
+  val ColumnFormatWithPrecision = ColumnFormat(Left("test"), 1, 2)
+  val ColumnFormatPercentage = ColumnFormat(Left(PercentFormat), 1, 2)
+  val ColumnFormatTime = ColumnFormat(Left(TimeFormats.head), 1, 2)
+  val ColumnFormatDate = ColumnFormat(Left(DateFormats.keys.head), 1, 2)
 
   "A percent element when converting to a string" should "convert properly with no column format precision" in {
     assert(DataWriterUtil.convertPercentElementToString(2.0, ColumnFormatNoPrecision) === "200%")
@@ -135,7 +135,7 @@ class DataWriterUtilSuite extends FlatSpec {
 
   it should "correctly process time" in {
     TimeFormats.foreach(time =>
-      assert(DataWriterUtil.processEntry(Column(0, "test", "test", ColumnFormat(time, 1, 2), null, 0), "3670") == "01:01:10")
+      assert(DataWriterUtil.processEntry(Column(Some(0), Some("test"), Left("test"), ColumnFormat(Left(time), 1, 2), null, Some(0)), "3670") == "01:01:10")
     )
   }
 
@@ -144,17 +144,17 @@ class DataWriterUtilSuite extends FlatSpec {
   }
 
   it should "correctly process percentages" in {
-    val column = Column(0, "test", "test", ColumnFormatPercentage, null, 0)
+    val column = Column(Some(0), Some("test"), Left("test"), ColumnFormatPercentage, null, Some(0))
     assert(DataWriterUtil.processEntry(column, "0.496") == "49.60%")
   }
 
   it should "correctly process date time" in {
-    val column = Column(0, "test", "test", ColumnFormatDate, null, 0)
+    val column = Column(Some(0), Some("test"), Left("test"), ColumnFormatDate, null, Some(0))
     assert(DataWriterUtil.processEntry(column, ZonedDateTime.now()) != null)
   }
 
   "When getting the value it" should "correctly process an entry" in {
-    val column = Column(0, "test", "test", ColumnFormatPercentage, null, 0)
+    val column = Column(Some(0), Some("test"), Left("test"), ColumnFormatPercentage, null, Some(0))
     assert(DataWriterUtil.getValue(column, "0.496") == "49.60%")
   }
 
@@ -171,11 +171,11 @@ class DataWriterUtilSuite extends FlatSpec {
 
   "When getting the row values it" should "correctly return the entries" in {
     val columnMeta = Seq[Column](
-      Column(1, "Column1Name", "Column1Label", ColumnFormatPercentage, null, 0),
-      Column(2, "Column2Name", "Column2Label", ColumnFormatTime, null, 0),
-      Column(3, "Column3Name", "Column3Label", ColumnFormatDate, null, 0),
-      Column(4, "Column4Name", "Column4Label", ColumnFormatNoPrecision, null, 0),
-      Column(5, "Column5Name", "Column5Label", ColumnFormatWithPrecision, null, 0),
+      Column(Some(1), Some("Column1Name"), Left("Column1Label"), ColumnFormatPercentage, null, Some(0)),
+      Column(Some(2), Some("Column2Name"), Left("Column2Label"), ColumnFormatTime, null, Some(0)),
+      Column(Some(3), Some("Column3Name"), Left("Column3Label"), ColumnFormatDate, null, Some(0)),
+      Column(Some(4), Some("Column4Name"), Left("Column4Label"), ColumnFormatNoPrecision, null, Some(0)),
+      Column(Some(5), Some("Column5Name"), Left("Column5Label"), ColumnFormatWithPrecision, null, Some(0)),
       null
     )
     val row = Seq[Any](

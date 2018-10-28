@@ -36,14 +36,15 @@ case class SasFileProperties(isU64: Boolean = false, compressionMethod: Option[S
                              pageCount: Long = 0L, rowLength: Long = 0L, rowCount: Long = 0L,
                              mixPageRowCount: Long = 0L, columnsCount: Long = 0L, columnsNamesBytes: Seq[Seq[Byte]] = Seq(Seq()),
                              columnNames: Seq[Either[String, ColumnMissingInfo]] = Seq(),
-                             columnAttributes: Seq[ColumnAttributes] = Seq()) {
+                             columnAttributes: Seq[ColumnAttributes] = Seq(), column: Option[Column] = None,
+                             row: Seq[Any] = Seq()) {
 
   /**
     * Perform a copy of the properties
     *
     * @return result new Sas file properties.
     */
-  private def copy(isU64: Boolean = this.isU64, compressionMethod: Option[String] = this.compressionMethod,
+  def copy(isU64: Boolean = this.isU64, compressionMethod: Option[String] = this.compressionMethod,
                    endianness: Int = this.endianness, encoding: String = this.encoding,
                    sessionEncoding: String = this.sessionEncoding, name: String = this.name,
                    fileType: String = this.fileType, dateCreated: ZonedDateTime = this.dateCreated,
@@ -55,11 +56,12 @@ case class SasFileProperties(isU64: Boolean = false, compressionMethod: Option[S
                    mixPageRowCount: Long = this.mixPageRowCount, columnsCount: Long = this.columnsCount,
                    columnNamesBytes: Seq[Seq[Byte]] = this.columnsNamesBytes,
                    columnNames: Seq[Either[String, ColumnMissingInfo]] = this.columnNames,
-                   columnAttributes: Seq[ColumnAttributes] = this.columnAttributes) =
+                   columnAttributes: Seq[ColumnAttributes] = this.columnAttributes,
+                   column: Option[Column] = this.column, row: Seq[Any] = this.row) =
     SasFileProperties(
       isU64, compressionMethod, endianness, encoding, sessionEncoding, name, fileType, dateCreated, dateModified,
       sasRelease, serverType, osName, osType, headerLength, pageLength, pageCount, rowLength, rowCount,
-      mixPageRowCount, columnsCount, columnNamesBytes, columnNames, columnAttributes
+      mixPageRowCount, columnsCount, columnNamesBytes, columnNames, columnAttributes, column, row
     )
 
   /**
@@ -151,5 +153,21 @@ case class SasFileProperties(isU64: Boolean = false, compressionMethod: Option[S
     */
   def setColumnsAttributes(value: Seq[ColumnAttributes]): SasFileProperties = copy(columnAttributes = value)
 
-  def isCompressed: Boolean = compressionMethod != null
+  /**
+    * Set the last read column and return new properties
+    *
+    * @param val value to be set.
+    * @return result new Sas file properties.
+    */
+  def setColumn(value: Option[Column]): SasFileProperties = copy(column = value)
+
+  /**
+    * Set the last read column and return new properties
+    *
+    * @param val value to be set.
+    * @return result new Sas file properties.
+    */
+  def setRow(value: Seq[Any]): SasFileProperties = copy(row = value)
+
+  def isCompressed: Boolean = compressionMethod != null  && compressionMethod.isDefined
 }

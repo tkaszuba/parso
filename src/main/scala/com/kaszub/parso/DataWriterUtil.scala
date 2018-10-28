@@ -1,6 +1,6 @@
 package com.kaszub.parso
 
-import java.io.{DataInputStream, EOFException, IOException}
+import java.io.IOException
 import java.text.DecimalFormat
 import java.time.format.DateTimeFormatter
 import java.time.ZonedDateTime
@@ -185,13 +185,13 @@ final object DataWriterUtil extends ParserMessageConstants{
 
     entry match {
       case entry: Double => convertDoubleElementToString(entry)
-      case entry: ZonedDateTime => convertDateTimeElementToString(entry, column.format.name, locale)
+      case entry: ZonedDateTime => convertDateTimeElementToString(entry, column.format.name.left.getOrElse(null), locale)
       case entry: String => {
         if (entry.contains(DoubleInfinityString))
           ""
-        else if (column != null && (TimeFormatStrings contains column.format.name))
+        else if (column != null && column.format.name.isLeft && (TimeFormatStrings contains column.format.name.left.get))
           convertTimeElementToString(entry)
-        else if (column != null && PercentFormat == column.format.name)
+        else if (column != null && column.format.name.isLeft && PercentFormat == column.format.name.left.get)
           convertPercentElementToString(entry, column.format)
         else
           entry

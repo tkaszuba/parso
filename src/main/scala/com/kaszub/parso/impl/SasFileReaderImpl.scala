@@ -75,7 +75,7 @@ class SasFileReaderImpl (private val sasFileParser: SasFileParser) extends SasFi
     *
     * @return the object of the { @link SasFileProperties} class that stores file metadata.
     */
-  def getSasFileProperties: SasFileProperties = sasFileParser.getSasFileProperties
+  def getSasFileProperties: SasFileProperties = ??? //sasFileParser.getSasFileProperties
 }
 
 object SasFileReaderImpl {
