@@ -39,3 +39,6 @@ case class ColumnFormat(name: Either[String, ColumnMissingInfo], width: Int, pre
     }
   }
 }
+
+case class ColumnLabel(alias: Either[String, ColumnMissingInfo])
+

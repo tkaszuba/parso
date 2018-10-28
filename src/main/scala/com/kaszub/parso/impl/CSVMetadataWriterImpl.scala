@@ -109,7 +109,7 @@ case class CSVMetadataWriterImpl(writer: Writer,
         )
       writer.write(delimiter)
       CSVUtil.checkSurroundByQuotesAndWrite(writer, delimiter,
-        column.label match {
+        column.label.alias match {
           case Left(value) => value
           case _ => ""
         })

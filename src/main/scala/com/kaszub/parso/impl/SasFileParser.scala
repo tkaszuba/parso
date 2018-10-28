@@ -770,9 +770,9 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
 
       logger.debug(ColumnFormatMsg.format(columnFormatName match {case Left(v) => v case _ => "FORMAT MISSING"}))
 
-      properties.setColumn(
-        Option(
-          Column(label = columnLabel, format = ColumnFormat(columnFormatName, columnFormatWidth, columnFormatPrecision))))
+      properties.setColumnFormats(
+        Seq(ColumnFormat(columnFormatName, columnFormatWidth, columnFormatPrecision))).setColumnLabels(
+        Seq(ColumnLabel(columnLabel)))
     }
   }
 
@@ -1090,8 +1090,6 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
       else
         Map()
 
-    //val map = res.results.groupMap(_.subheaderIndex)(_.properties)
-
     properties.copy(
       rowLength = res(Some(SubheaderIndexes.RowSizeSubheaderIndex)).head.rowLength,
       rowCount = res(Some(SubheaderIndexes.RowSizeSubheaderIndex)).head.rowCount,
@@ -1101,12 +1099,9 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
       columnNamesBytes = res(Some(SubheaderIndexes.ColumnTextSubheaderIndex)).head.columnsNamesBytes,
       columnNames = res(Some(SubheaderIndexes.ColumnNameSubheaderIndex)).head.columnNames,
       columnAttributes = res(Some(SubheaderIndexes.ColumnAttributesSubheaderIndex)).head.columnAttributes,
-      columns = res(Some(SubheaderIndexes.FormatAndLabelSubheaderIndex)).flatMap(_.column) //where's the rest of the column formats???
+      columnFormats = res(Some(SubheaderIndexes.FormatAndLabelSubheaderIndex)).flatMap(_.columnFormats),
+      columnLabels = res(Some(SubheaderIndexes.FormatAndLabelSubheaderIndex)).flatMap(_.columnLabels)
     )
-
-//    val containsDataSubheader =
-//      !res.results.filter(_.subheaderIndex.
-//        flatMap(f => Some(f == SubheaderIndexes.DataSubheaderIndex)).getOrElse(false)).isEmpty
 
     //header.pageType == PageDataType || header.pageType == PageMixType || map.contains(SubheaderIndexes.DataSubheaderIndex)
 
@@ -1151,6 +1146,8 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
       else
         MetadataReadResult(None, subheaderPointer, properties)
     })
+
+    //todo: Sort the results since they can be read in parallel
 
     //Dependency between column name subheader and the text subheader, need to treat it seperatly
     val col = results.groupBy(_.subheaderIndex)//(_.properties)

@@ -316,11 +316,11 @@ class SasFileParserSuite extends FlatSpec with SasFileConstants {
     val properties = subheaderIndexToClass(SubheaderIndexes.FormatAndLabelSubheaderIndex)
       .processSubheader(file, propertiesText, pointer.offset, pointer.length)
 
-    assert(properties.column.get.format.toString == ".40.")
-    assert(properties.column.get.format.name == Right(ColumnMissingInfo(0,4,8,1, MissingInfoType.FORMAT)))
-    assert(properties.column.get.format.precision == 0)
-    assert(properties.column.get.format.width == 40)
-    assert(properties.column.get.label == Right(ColumnMissingInfo(0,5,0,2, MissingInfoType.LABEL)))
+    assert(properties.columnFormats.head.toString == ".40.")
+    assert(properties.columnFormats.head.name == Right(ColumnMissingInfo(0,4,8,1, MissingInfoType.FORMAT)))
+    assert(properties.columnFormats.head.precision == 0)
+    assert(properties.columnFormats.head.width == 40)
+    assert(properties.columnLabels.head.alias == Right(ColumnMissingInfo(0,5,0,2, MissingInfoType.LABEL)))
 
     file.close()
   }
@@ -347,8 +347,9 @@ class SasFileParserSuite extends FlatSpec with SasFileConstants {
     val pageHeader = SasFileParser.readPageHeader(file, fileHeader.properties)
 
     val properties = SasFileParser.processSasFilePageMeta(file, pageHeader, fileHeader.properties)
+    val cols = properties.getColumns
 
-    assert(properties == null)
+    assert(cols == null)
 
   }
 
