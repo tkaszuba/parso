@@ -478,7 +478,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
       * @throws IOException if reading from the { @link SasFileParser#sasFileStream} stream is impossible.
       */
     @throws[IOException]
-    def processSubheader(inputStream: InputStream, properties: SasFileProperties, offset: Long, length: Long): SasFileProperties
+    def processSubheader(inputStream: InputStream, properties: SasFileProperties, offset: Long, length: Long, copy: Boolean = true): SasFileProperties
   }
 
   /**
@@ -514,7 +514,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
       * @throws IOException if reading from the { @link SasFileParser#sasFileStream} stream is impossible.
       */
     @throws[IOException]
-    def processSubheader(inputStream: InputStream, properties: SasFileProperties, offset: Long, length: Long): SasFileProperties = {
+    def processSubheader(inputStream: InputStream, properties: SasFileProperties, offset: Long, length: Long, copy: Boolean): SasFileProperties = {
       val intOrLongLength = if (properties.isU64) BytesInLong else BytesInInt
       val offsetSubheader = Seq(
         offset + ROW_LENGTH_OFFSET_MULTIPLIER * intOrLongLength,
@@ -527,9 +527,11 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
       val isU64 = properties.isU64
       val endianness = properties.endianness
 
+      val rowLen = SasFileParser.bytesToLong(vars(0), isU64, endianness)
+
       val propertiesRowLength =
         if (properties.rowLength == 0)
-          properties.setRowLength(SasFileParser.bytesToLong(vars(0), isU64, endianness))
+          if (copy) properties.setRowLength(rowLen) else SasFileProperties(rowLength = rowLen)
         else
           properties
 
@@ -563,14 +565,18 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
       * @throws IOException if reading from the { @link SasFileParser#sasFileStream} stream is impossible.
       */
     @throws[IOException]
-    def processSubheader(inputStream: InputStream, properties: SasFileProperties, offset: Long, length: Long): SasFileProperties = {
+    def processSubheader(inputStream: InputStream, properties: SasFileProperties, offset: Long, length: Long, copy: Boolean): SasFileProperties = {
       val intOrLongLength = if (properties.isU64) BytesInLong else BytesInInt
       val offsetSubheader = Seq(offset + intOrLongLength)
       val lengthSubheader = Seq(intOrLongLength)
 
       val vars = getBytesFromFile(inputStream, 0, offsetSubheader, lengthSubheader).readBytes
+      val colCount = bytesToLong(vars(0), properties.isU64, properties.endianness)
 
-      properties.setColumnsCount(bytesToLong(vars(0), properties.isU64, properties.endianness))
+      if (copy)
+        properties.setColumnsCount(colCount)
+      else
+        SasFileProperties(columnsCount = colCount)
     }
   }
 
@@ -587,7 +593,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
       * @param subheaderLength the subheader length.
       * @throws IOException if reading from the {@link SasFileParser#sasFileStream} stream is impossible.
       */
-    def processSubheader(inputStream: InputStream, properties: SasFileProperties, offset: Long, length: Long): SasFileProperties = properties
+    def processSubheader(inputStream: InputStream, properties: SasFileProperties, offset: Long, length: Long, copy: Boolean): SasFileProperties = properties
   }
 
   /**
@@ -605,7 +611,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
       * @param subheaderLength the subheader length.
       * @throws IOException if reading from the { @link SasFileParser#sasFileStream} stream is impossible.
       */
-    def processSubheader(inputStream: InputStream, properties: SasFileProperties, offset: Long, length: Long): SasFileProperties = {
+    def processSubheader(inputStream: InputStream, properties: SasFileProperties, offset: Long, length: Long, copy: Boolean): SasFileProperties = {
       val intOrLongLength = if (properties.isU64) BytesInLong else BytesInInt
       val offsetSubheader = Seq(offset + intOrLongLength)
       val lengthByteBuffer = Seq(TextBlockSizeLength)
@@ -617,9 +623,16 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
       val varsFile = getBytesFromFile(inputStream, 0, offsetSubheader, lengthFile).readBytes
 
       val columnName = varsFile(0)
-      val compressionLiteral = findCompressionLiteral(bytesToString(columnName, properties.encoding))
+      val compression = findCompressionLiteral(bytesToString(columnName, properties.encoding))
 
-      properties.setCompressionMethod(compressionLiteral).setColumnsNamesBytes(Seq(columnName))
+      val newProperties = {
+        if (copy)
+          properties.setCompressionMethod(compression)
+        else
+          SasFileProperties(compressionMethod = compression)
+      }
+
+      newProperties.setColumnsNamesBytes(Seq(columnName))
     }
   }
 
@@ -640,11 +653,11 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
       * @param offset the offset at which the subheader is located.
       * @param length the subheader length.
       */
-    def processSubheader(inputStream: InputStream, properties: SasFileProperties, offset: Long, length: Long): SasFileProperties = {
+    def processSubheader(inputStream: InputStream, properties: SasFileProperties, offset: Long, length: Long, copy: Boolean): SasFileProperties = {
       val intOrLongLength = if (properties.isU64) BytesInLong else BytesInInt
       val columnNamePointersCount = (length - 2 * intOrLongLength - 12) / 8
 
-      val columnsNames = (0 until columnNamePointersCount.toInt).map(i => {
+      val colNames = (0 until columnNamePointersCount.toInt).map(i => {
         val colOffset = Seq(
           offset + intOrLongLength + ColumnNamePointerLength * (i + 1) + ColumnNameTextSubheaderOffset,
           offset + intOrLongLength + ColumnNamePointerLength * (i + 1) + ColumnNameOffsetOffset,
@@ -664,7 +677,8 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
           Right(
             ColumnMissingInfo(i, textSubheaderIndex, columnNameOffset, columnNameLength, MissingInfoType.NAME))
       })
-      properties.setColumnsNames(columnsNames)
+
+      if (copy) properties.setColumnsNames(colNames) else SasFileProperties(columnNames = colNames)
     }
   }
   /**
@@ -682,7 +696,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
       * @param subheaderOffset the offset at which the subheader is located.
       * @param subheaderLength the subheader length.
       */
-    def processSubheader(inputStream: InputStream, properties: SasFileProperties, offset: Long, length: Long): SasFileProperties = {
+    def processSubheader(inputStream: InputStream, properties: SasFileProperties, offset: Long, length: Long, copy: Boolean): SasFileProperties = {
       val intOrLongLength = if (properties.isU64) BytesInLong else BytesInInt
       val columnAttributesVectorsCount = (length - 2 * intOrLongLength - 12) / (intOrLongLength + 8)
 
@@ -701,7 +715,8 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
           if (vars(2)(0) == 1) classOf[Number] else classOf[String]
         )
       })
-      properties.setColumnsAttributes(attributes)
+
+      if (copy) properties.setColumnsAttributes(attributes) else SasFileProperties(columnAttributes = attributes)
     }
   }
   /**
@@ -726,7 +741,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
       * @param subheaderOffset the offset at which the subheader is located.
       * @param subheaderLength the subheader length.
       */
-    def processSubheader(inputStream: InputStream, properties: SasFileProperties, offset: Long, length: Long): SasFileProperties = {
+    def processSubheader(inputStream: InputStream, properties: SasFileProperties, offset: Long, length: Long, copy: Boolean): SasFileProperties = {
       val intOrLongLength = if (properties.isU64) BytesInLong else BytesInInt
       val formatOffset = Seq(
         offset + ColumnFormatWidthOffset + intOrLongLength,
@@ -770,9 +785,10 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
 
       logger.debug(ColumnFormatMsg.format(columnFormatName match {case Left(v) => v case _ => "FORMAT MISSING"}))
 
-      properties.setColumnFormats(
-        Seq(ColumnFormat(columnFormatName, columnFormatWidth, columnFormatPrecision))).setColumnLabels(
-        Seq(ColumnLabel(columnLabel)))
+      val formats = Seq(ColumnFormat(columnFormatName, columnFormatWidth, columnFormatPrecision))
+      val formatsProperties = if (copy) properties.setColumnFormats(formats) else SasFileProperties(columnFormats = formats)
+
+      formatsProperties.setColumnLabels(Seq(ColumnLabel(columnLabel)))
     }
   }
 
@@ -788,7 +804,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
       * @param offset the offset at which the subheader is located.
       * @param length the subheader length.
       */
-    def processSubheader(inputStream: InputStream, properties: SasFileProperties, offset: Long, length: Long): SasFileProperties = properties
+    def processSubheader(inputStream: InputStream, properties: SasFileProperties, offset: Long, length: Long, copy: Boolean): SasFileProperties = properties
   }
 
   /**
@@ -803,7 +819,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
       * @param offset the offset at which the subheader is located.
       * @param length the subheader length.
       */
-    def processSubheader(inputStream: InputStream, properties: SasFileProperties, offset: Long, length: Long): SasFileProperties = {
+    def processSubheader(inputStream: InputStream, properties: SasFileProperties, offset: Long, length: Long, copy: Boolean): SasFileProperties = {
       val page = getBytesFromFile(inputStream, 0, Seq(offset), Seq(length.toInt)).readBytes
       //properties.setRow(processByteArrayWithData(page(0), properties, offset, length))
       SasFileProperties(row = processByteArrayWithData(page(0), properties, offset, length))
@@ -821,8 +837,6 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
   case class BytesReadResult(eof: Boolean = false, absPosition:Long = 0L, relPosition: Long = 0L, readBytes: Seq[Seq[Byte]] = Seq())
 
   case class MetadataReadResult(subheaderIndex: Option[SubheaderIndexes], pointer: SubheaderPointer, properties: SasFileProperties)
-
-//  case class MetadataReadResults(results: Map[Option[SubheaderIndexes], Seq[SasFileProperties]] = Map())
 
   /**
     * The result of parsing a SAS file
@@ -1132,7 +1146,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
           if (subheaderIndex.isDefined) {
             logger.debug(SubheaderProcessFunctionName.format(subheaderIndex.get))
             if (subheaderIndex != Some(SubheaderIndexes.DataSubheaderIndex) && subheaderIndex != Some(SubheaderIndexes.ColumnNameSubheaderIndex))
-              subheaderIndexToClass(subheaderIndex.get).processSubheader(fileStream, properties, subheaderPointer.offset, subheaderPointer.length)
+              subheaderIndexToClass(subheaderIndex.get).processSubheader(fileStream, properties, subheaderPointer.offset, subheaderPointer.length,true)
             else
               properties
           }
@@ -1156,7 +1170,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
 
     logger.debug(SubheaderProcessFunctionName.format(SubheaderIndexes.ColumnNameSubheaderIndex))
     val colNameProperties = subheaderIndexToClass(SubheaderIndexes.ColumnNameSubheaderIndex).
-      processSubheader(fileStream, textProperties, pointer.offset, pointer.length)
+      processSubheader(fileStream, textProperties, pointer.offset, pointer.length, false)
 
     col.keys.map(key => key match {
       case Some(SubheaderIndexes.ColumnNameSubheaderIndex) => key -> Seq(colNameProperties)

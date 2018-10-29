@@ -10,6 +10,8 @@ import com.kaszub.parso.impl.{SasFileConstants, SasFileParser}
 import com.typesafe.scalalogging.Logger
 import org.scalatest.FlatSpec
 
+import scala.collection.immutable.ArraySeq
+
 class SasFileParserSuite extends FlatSpec with SasFileConstants {
 
   private val logger = Logger[this.type]
@@ -17,6 +19,33 @@ class SasFileParserSuite extends FlatSpec with SasFileConstants {
   private val DefaultFileName = "sas7bdat//all_rand_normal.sas7bdat"
   private val NoCompressionFileName = "sas7bdat//charset_aara.sas7bdat"
   private val ColonFileName = "sas7bdat//colon.sas7bdat"
+
+  private val DefaultFileMetadata = SasFileProperties(
+    false, Some("SASYZCRL"), 1, "windows-1251", null,
+    "ALL_RAND_NORMAL", "DATA",
+    ZonedDateTime.of(
+      1993, 6, 5, 21, 36, 17, 0, ZoneOffset.UTC),
+    ZonedDateTime.of(
+      1993, 6, 5, 21, 36, 17, 0, ZoneOffset.UTC),
+    "9.0101M3", "XP_PRO", "", "",
+    1024, 4096, 3, 64,
+    37, 36, 8, Seq(ArraySeq(76, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 83, 65, 83, 89, 90, 67, 82, 76, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 68, 65, 84, 65, 83, 84, 69, 80, 120, 49, 0, 0, 120, 50, 0, 0, 120, 51, 0, 0, 120, 52, 0, 0, 120, 53, 0, 0, 120, 54, 0, 0, 120, 55, 0, 0, 120, 56, 0, 0)),
+    Vector(Left("x1"), Left("x2"), Left("x3"), Left("x4"), Left("x5"), Left("x6"), Left("x7"), Left("x8")),
+    Vector(ColumnAttributes(0L, 8, classOf[java.lang.Number]), ColumnAttributes(8L, 8, classOf[java.lang.Number]), ColumnAttributes(16L, 8, classOf[java.lang.Number]), ColumnAttributes(24L, 8, classOf[java.lang.Number]), ColumnAttributes(32L, 8, classOf[java.lang.Number]), ColumnAttributes(40L, 8, classOf[java.lang.Number]), ColumnAttributes(48L, 8, classOf[java.lang.Number]), ColumnAttributes(56L, 8, classOf[java.lang.Number])),
+    Vector(ColumnFormat(Left(""),0,0),ColumnFormat(Left(""),0,0),ColumnFormat(Left(""),0,0),ColumnFormat(Left(""),0,0),ColumnFormat(Left(""),0,0),ColumnFormat(Left(""),0,0),ColumnFormat(Left(""),0,0),ColumnFormat(Left(""),0,0)),
+    Vector(ColumnLabel(Left("")),ColumnLabel(Left("")),ColumnLabel(Left("")),ColumnLabel(Left("")),ColumnLabel(Left("")),ColumnLabel(Left("")),ColumnLabel(Left("")),ColumnLabel(Left(""))),
+    Seq()
+  )
+
+  private val DefaultFileColumns = Vector(
+    Column(Some(0), Some("x1"), ColumnLabel(Left("")), ColumnFormat(Left(""),0,0), Some(classOf[java.lang.Number]), Some(8)),
+    Column(Some(1), Some("x2"), ColumnLabel(Left("")), ColumnFormat(Left(""),0,0), Some(classOf[java.lang.Number]), Some(8)),
+    Column(Some(2), Some("x3"), ColumnLabel(Left("")), ColumnFormat(Left(""),0,0), Some(classOf[java.lang.Number]), Some(8)),
+    Column(Some(3), Some("x4"), ColumnLabel(Left("")), ColumnFormat(Left(""),0,0), Some(classOf[java.lang.Number]), Some(8)),
+    Column(Some(4), Some("x5"), ColumnLabel(Left("")), ColumnFormat(Left(""),0,0), Some(classOf[java.lang.Number]), Some(8)),
+    Column(Some(5), Some("x6"), ColumnLabel(Left("")), ColumnFormat(Left(""),0,0), Some(classOf[java.lang.Number]), Some(8)),
+    Column(Some(6), Some("x7"), ColumnLabel(Left("")), ColumnFormat(Left(""),0,0), Some(classOf[java.lang.Number]), Some(8)),
+    Column(Some(7), Some("x8"), ColumnLabel(Left("")), ColumnFormat(Left(""),0,0), Some(classOf[java.lang.Number]), Some(8)))
 
   private def DefaultFileNameStream: InputStream = new BufferedInputStream(
     Thread.currentThread.getContextClassLoader.getResourceAsStream(DefaultFileName))
@@ -349,7 +378,8 @@ class SasFileParserSuite extends FlatSpec with SasFileConstants {
     val properties = SasFileParser.processSasFilePageMeta(file, pageHeader, fileHeader.properties)
     val cols = properties.getColumns
 
-    assert(cols == null)
+    assert(properties == DefaultFileMetadata)
+    assert(cols == DefaultFileColumns)
 
   }
 
