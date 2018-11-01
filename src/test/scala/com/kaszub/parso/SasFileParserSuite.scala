@@ -375,37 +375,46 @@ class SasFileParserSuite extends FlatSpec with SasFileConstants {
     val fileHeader = SasFileParser.readSasFileHeader(file)
     val pageHeader = SasFileParser.readPageHeader(file, fileHeader.properties)
 
-    val properties = SasFileParser.processSasFilePageMeta(file, pageHeader, fileHeader.properties)
-    val cols = properties.getColumns
+    val res = SasFileParser.processSasFilePageMeta(file, pageHeader, fileHeader.properties)
+    val cols = res.properties.getColumns()
 
-    assert(properties == DefaultFileMetadata)
+    assert(res.success)
     assert(cols == DefaultFileColumns)
+    assert(cols == res.properties.columns, "columns should be cached")
+    assert(res.properties == DefaultFileMetadata)
 
   }
 
-  /*it should "return the proper row when reading the data row subheader" in {
-    val file = NoCompressionFileNameStream//DefaultFileNameStream
+  it should "process all of metadata" in {
+    val file = DefaultFileNameStream
 
-    val fileHeader = SasFileParser.readSasFileHeader(file)
+    SasFileParser.getMetadataFromSasFile(file)
 
-    val pointerColumnSize = SasFileParser.readSubheaderPointer(file, fileHeader.properties, SubheaderIndexes.ColumnSizeSubheaderIndex.id)
-    val propertiesColumnSize = subheaderIndexToClass(SubheaderIndexes.ColumnSizeSubheaderIndex)
-      .processSubheader(file, fileHeader.properties, pointerColumnSize.offset, pointerColumnSize.length)
+  }
 
-    val pointerText = SasFileParser.readSubheaderPointer(file, propertiesColumnSize, SubheaderIndexes.ColumnTextSubheaderIndex.id)
-    val propertiesText = subheaderIndexToClass(SubheaderIndexes.ColumnTextSubheaderIndex)
-      .processSubheader(file, propertiesColumnSize, pointerText.offset, pointerText.length)
-
-    val pointerColAtt = SasFileParser.readSubheaderPointer(file, propertiesText, SubheaderIndexes.ColumnAttributesSubheaderIndex.id)
-    val propertiesColAtt = subheaderIndexToClass(SubheaderIndexes.ColumnAttributesSubheaderIndex)
-      .processSubheader(file, propertiesText, pointerColAtt.offset, pointerColAtt.length)
-
-    val pointerDataRow = SasFileParser.readSubheaderPointer(file, propertiesColAtt, SubheaderIndexes.DataSubheaderIndex.id)
-    val propertiesDataRow = subheaderIndexToClass(SubheaderIndexes.DataSubheaderIndex)
-      .processSubheader(file, propertiesColAtt, pointerDataRow.offset, pointerDataRow.length)
-
-    assert(propertiesDataRow != null)
-  }*/
+//  it should "return the proper row when reading the data row subheader" in {
+//    val file = NoCompressionFileNameStream//DefaultFileNameStream
+//
+//    val fileHeader = SasFileParser.readSasFileHeader(file)
+//
+//    val pointerColumnSize = SasFileParser.readSubheaderPointer(file, fileHeader.properties, SubheaderIndexes.ColumnSizeSubheaderIndex.id)
+//    val propertiesColumnSize = subheaderIndexToClass(SubheaderIndexes.ColumnSizeSubheaderIndex)
+//      .processSubheader(file, fileHeader.properties, pointerColumnSize.offset, pointerColumnSize.length)
+//
+//    val pointerText = SasFileParser.readSubheaderPointer(file, propertiesColumnSize, SubheaderIndexes.ColumnTextSubheaderIndex.id)
+//    val propertiesText = subheaderIndexToClass(SubheaderIndexes.ColumnTextSubheaderIndex)
+//      .processSubheader(file, propertiesColumnSize, pointerText.offset, pointerText.length)
+//
+//    val pointerColAtt = SasFileParser.readSubheaderPointer(file, propertiesText, SubheaderIndexes.ColumnAttributesSubheaderIndex.id)
+//    val propertiesColAtt = subheaderIndexToClass(SubheaderIndexes.ColumnAttributesSubheaderIndex)
+//      .processSubheader(file, propertiesText, pointerColAtt.offset, pointerColAtt.length)
+//
+//    val pointerDataRow = SasFileParser.readSubheaderPointer(file, propertiesColAtt, SubheaderIndexes.DataSubheaderIndex.id)
+//    val propertiesDataRow = subheaderIndexToClass(SubheaderIndexes.DataSubheaderIndex)
+//      .processSubheader(file, propertiesColAtt, pointerDataRow.offset, pointerDataRow.length)
+//
+//    assert(propertiesDataRow != null)
+//  }
 
 
 

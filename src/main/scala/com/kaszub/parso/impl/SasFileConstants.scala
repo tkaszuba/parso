@@ -488,7 +488,7 @@ trait SasFileConstants {
     /**
       * The page type amd.
       */
-    val PAGE_AMD_TYPE = 1024
+    val PageAmdType = 1024
     /**
       * The sas7bdat file stores the array of subheader pointers ({@link SasFileParser.SubheaderPointer}) at this
       * offset (adding {@link SasFileConstants#PAGE_BIT_OFFSET_X86} or {@link SasFileConstants#PAGE_BIT_OFFSET_X64})
@@ -516,7 +516,7 @@ trait SasFileConstants {
     /**
       * The number of bits in a byte.
       */
-    val BITS_IN_BYTE = 8
+    val BitsInByte = 8
     /**
       * The multiplier whose product with the length of the variable type (that can be int or long depending on the
       * {@link SasFileConstants#ALIGN_2_VALUE} value) is the offset from the subheader beginning

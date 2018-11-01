@@ -1,6 +1,10 @@
 package com.kaszub.parso
 
-import java.time.{ZonedDateTime}
+import java.time.ZonedDateTime
+
+import com.kaszub.parso.MissingInfoType.MissingInfoType
+import com.kaszub.parso.impl.SasFileParser
+import com.kaszub.parso.impl.SasFileParser.SubheaderPointer
 
 /**
   * A class to store all the sas7bdat file metadata.
@@ -37,7 +41,8 @@ case class SasFileProperties(isU64: Boolean = false, compressionMethod: Option[S
                              mixPageRowCount: Long = 0L, columnsCount: Long = 0L, columnsNamesBytes: Seq[Seq[Byte]] = Seq(Seq()),
                              columnNames: Seq[Either[String, ColumnMissingInfo]] = Seq(),
                              columnAttributes: Seq[ColumnAttributes] = Seq(), columnFormats: Seq[ColumnFormat] = Seq(),
-                             columnLabels: Seq[ColumnLabel] = Seq(), row: Seq[Any] = Seq()) {
+                             columnLabels: Seq[ColumnLabel] = Seq(), columns: Seq[Column] = Seq(),
+                             dataSubheaderPointers: Seq[SubheaderPointer] = Seq(),row: Seq[Any] = Seq()) {
 
   /**
     * Perform a copy of the properties
@@ -58,11 +63,14 @@ case class SasFileProperties(isU64: Boolean = false, compressionMethod: Option[S
                    columnNames: Seq[Either[String, ColumnMissingInfo]] = this.columnNames,
                    columnAttributes: Seq[ColumnAttributes] = this.columnAttributes,
                    columnFormats: Seq[ColumnFormat] = this.columnFormats, columnLabels: Seq[ColumnLabel] = this.columnLabels,
-                   row: Seq[Any] = this.row) =
+                   columns: Seq[Column] = this.columns,
+                   dataSubheaderPointers: Seq[SubheaderPointer] = this.dataSubheaderPointers, row: Seq[Any] = this.row
+          ) =
     SasFileProperties(
       isU64, compressionMethod, endianness, encoding, sessionEncoding, name, fileType, dateCreated, dateModified,
       sasRelease, serverType, osName, osType, headerLength, pageLength, pageCount, rowLength, rowCount,
-      mixPageRowCount, columnsCount, columnNamesBytes, columnNames, columnAttributes, columnFormats, columnLabels, row
+      mixPageRowCount, columnsCount, columnNamesBytes, columnNames, columnAttributes,
+      columnFormats, columnLabels, columns, dataSubheaderPointers, row
     )
 
   /**
@@ -128,47 +136,56 @@ case class SasFileProperties(isU64: Boolean = false, compressionMethod: Option[S
     * @param val value to be set.
     * @return result new Sas file properties.
     */
-  def setColumnsCount(value: Long): SasFileProperties = copy(columnsCount = value)
+  def setColumnsCount(value: Long): SasFileProperties = copy(columnsCount = value, columns = Seq())
 
   /**
-    * Set the column names bytes and return new properties
+    * Set the data subheader pointers and return new properties
     *
     * @param val value to be set.
     * @return result new Sas file properties.
     */
-  def setColumnsNamesBytes(value: Seq[Seq[Byte]]): SasFileProperties = copy(columnNamesBytes = value)
+  def setDataSubheaderPointers(value: Seq[SubheaderPointer]): SasFileProperties = copy(dataSubheaderPointers = value)
 
   /**
-    * Set the column names and return new properties
+    * Set the column names bytes and return new properties. Setting this property will invalidate the column cache if it exists
     *
     * @param val value to be set.
     * @return result new Sas file properties.
     */
-  def setColumnsNames(value: Seq[Either[String, ColumnMissingInfo]]): SasFileProperties = copy(columnNames = value)
+  def setColumnsNamesBytes(value: Seq[Seq[Byte]]): SasFileProperties = copy(columnNamesBytes = value, columns = Seq())
 
   /**
-    * Set the column attributes and return new properties
+    * Set the column names and return new properties. Setting this property will invalidate the column cache if it exists
     *
     * @param val value to be set.
     * @return result new Sas file properties.
     */
-  def setColumnsAttributes(value: Seq[ColumnAttributes]): SasFileProperties = copy(columnAttributes = value)
+  def setColumnsNames(value: Seq[Either[String, ColumnMissingInfo]]): SasFileProperties =
+    copy(columnNames = value, columns = Seq() )
 
   /**
-    * Set the last read column formats and return new properties
+    * Set the column attributes and return new properties. Setting this property will invalidate the column cache if it exists
     *
     * @param val value to be set.
     * @return result new Sas file properties.
     */
-  def setColumnFormats(value: Seq[ColumnFormat]): SasFileProperties = copy(columnFormats = value)
+  def setColumnsAttributes(value: Seq[ColumnAttributes]): SasFileProperties = copy(columnAttributes = value, columns = Seq())
 
   /**
-    * Set the last read column labels and return new properties
+    * Set the last read column formats and return new properties. Setting this property will invalidate the column cache if it exists
     *
     * @param val value to be set.
     * @return result new Sas file properties.
     */
-  def setColumnLabels(value: Seq[ColumnLabel]): SasFileProperties = copy(columnLabels = value)
+  def setColumnFormats(value: Seq[ColumnFormat]): SasFileProperties = copy(columnFormats = value, columns = Seq())
+
+  /**
+    * Set the last read column labels and return new properties. Setting this property will invalidate the column cache if it exists
+    *
+    * @param val value to be set.
+    * @return result new Sas file properties.
+    */
+  def setColumnLabels(value: Seq[ColumnLabel]): SasFileProperties = copy(columnLabels = value, columns = Seq())
 
   /**
     * Set the last read column and return new properties
@@ -178,18 +195,51 @@ case class SasFileProperties(isU64: Boolean = false, compressionMethod: Option[S
     */
   def setRow(value: Seq[Any]): SasFileProperties = copy(row = value)
 
+  /**
+    * Set the columns and return new properties
+    *
+    * @param val value to be set.
+    * @return result new Sas file properties.
+    */
+  def setColumns(value: Seq[Column]): SasFileProperties = copy(columns = value)
+
   def isCompressed: Boolean = compressionMethod != null  && compressionMethod.isDefined
 
-  def getColumns: Seq[Column] = {
-    //todo: handle missing infor types
-    (0 until columnsCount.toInt).map(i => Column(
-      Some(i.toInt),
-      columnNames(i).left.toOption,
-      columnLabels(i),
-      columnFormats(i),
-      Some(columnAttributes(i)._type),
-      Some(columnAttributes(i).length)
-    ))
+  /**
+    * Get the list of columns
+    *
+    * @param useCache whether to return the cached columns if they exist, default is true
+    * @param handleMissingColumns whether to handle missing columns, default is false
+    * @return result the list of columns
+    */
+  def getColumns(useCache:Boolean = true, handleMissingColumns: Boolean = false): Seq[Column] = {
+    if (useCache && !columns.isEmpty) return columns
+
+    def getMissingInfo(info: ColumnMissingInfo): String =
+      SasFileParser.bytesToString(columnsNamesBytes(info.textSubheaderIndex),
+        info.offset, info.length, encoding).intern
+
+    (0 until columnsCount.toInt).map(i =>
+      Column(
+        Some(i.toInt),
+        columnNames(i) match {
+          case Left(e) => Some(e)
+          case Right(e) => if (handleMissingColumns) Some(getMissingInfo(e)) else None
+        },
+        ColumnLabel(
+          columnLabels(i).alias match {
+            case Left(e) => Left(e)
+            case Right(e) => if (handleMissingColumns) Left(getMissingInfo(e)) else Right(e)
+        }),
+        ColumnFormat (
+          columnFormats(i).name match {
+            case Left(e) => Left(e)
+            case Right(e) => if (handleMissingColumns) Left(getMissingInfo(e)) else Right(e)
+          }, columnFormats(i).width, columnFormats(i).precision),
+        Some(columnAttributes(i)._type),
+        Some(columnAttributes(i).length)
+      )
+    )
   }
 
 }
