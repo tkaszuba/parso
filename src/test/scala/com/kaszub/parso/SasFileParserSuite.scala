@@ -5,7 +5,7 @@ import java.nio.ByteOrder
 import java.time.{ZoneOffset, ZonedDateTime}
 
 import com.kaszub.parso.impl.SasFileParser.SubheaderIndexes.SubheaderIndexes
-import com.kaszub.parso.impl.SasFileParser.{SubheaderIndexes, subheaderIndexToClass}
+import com.kaszub.parso.impl.SasFileParser.{SubheaderIndexes, SubheaderPointer, subheaderIndexToClass}
 import com.kaszub.parso.impl.{SasFileConstants, SasFileParser}
 import com.typesafe.scalalogging.Logger
 import org.scalatest.FlatSpec
@@ -19,6 +19,26 @@ class SasFileParserSuite extends FlatSpec with SasFileConstants {
   private val DefaultFileName = "sas7bdat//all_rand_normal.sas7bdat"
   private val NoCompressionFileName = "sas7bdat//charset_aara.sas7bdat"
   private val ColonFileName = "sas7bdat//colon.sas7bdat"
+
+  private val DefaultFileColumns = Vector(
+    Column(Some(0), Some("x1"), ColumnLabel(Left("")), ColumnFormat(Left(""),0,0), Some(classOf[java.lang.Number]), Some(8)),
+    Column(Some(1), Some("x2"), ColumnLabel(Left("")), ColumnFormat(Left(""),0,0), Some(classOf[java.lang.Number]), Some(8)),
+    Column(Some(2), Some("x3"), ColumnLabel(Left("")), ColumnFormat(Left(""),0,0), Some(classOf[java.lang.Number]), Some(8)),
+    Column(Some(3), Some("x4"), ColumnLabel(Left("")), ColumnFormat(Left(""),0,0), Some(classOf[java.lang.Number]), Some(8)),
+    Column(Some(4), Some("x5"), ColumnLabel(Left("")), ColumnFormat(Left(""),0,0), Some(classOf[java.lang.Number]), Some(8)),
+    Column(Some(5), Some("x6"), ColumnLabel(Left("")), ColumnFormat(Left(""),0,0), Some(classOf[java.lang.Number]), Some(8)),
+    Column(Some(6), Some("x7"), ColumnLabel(Left("")), ColumnFormat(Left(""),0,0), Some(classOf[java.lang.Number]), Some(8)),
+    Column(Some(7), Some("x8"), ColumnLabel(Left("")), ColumnFormat(Left(""),0,0), Some(classOf[java.lang.Number]), Some(8)))
+
+  private val DefaultDataPointers = Vector(
+    SubheaderPointer(2478,58,4,1), SubheaderPointer(2418,60,4,1), SubheaderPointer(2359,59,4,1), SubheaderPointer(2299,60,4,1),
+    SubheaderPointer(2239,60,4,1), SubheaderPointer(2179,60,4,1), SubheaderPointer(2119,60,4,1), SubheaderPointer(2059,60,4,1),
+    SubheaderPointer(1999,60,4,1), SubheaderPointer(1939,60,4,1), SubheaderPointer(1879,60,4,1), SubheaderPointer(1819,60,4,1),
+    SubheaderPointer(1759,60,4,1), SubheaderPointer(1699,60,4,1), SubheaderPointer(1639,60,4,1), SubheaderPointer(1579,60,4,1),
+    SubheaderPointer(1518,61,4,1), SubheaderPointer(1458,60,4,1), SubheaderPointer(1397,61,4,1), SubheaderPointer(1337,60,4,1),
+    SubheaderPointer(1277,60,4,1), SubheaderPointer(1216,61,4,1), SubheaderPointer(1156,60,4,1), SubheaderPointer(1095,61,4,1),
+    SubheaderPointer(1034,61,4,1), SubheaderPointer(973,61,4,1), SubheaderPointer(913,60,4,1), SubheaderPointer(852,61,4,1),
+    SubheaderPointer(791,61,4,1), SubheaderPointer(730,61,4,1), SubheaderPointer(669,61,4,1), SubheaderPointer(608,61,4,1))
 
   private val DefaultFileMetadata = SasFileProperties(
     false, Some("SASYZCRL"), 1, "windows-1251", null,
@@ -34,18 +54,8 @@ class SasFileParserSuite extends FlatSpec with SasFileConstants {
     Vector(ColumnAttributes(0L, 8, classOf[java.lang.Number]), ColumnAttributes(8L, 8, classOf[java.lang.Number]), ColumnAttributes(16L, 8, classOf[java.lang.Number]), ColumnAttributes(24L, 8, classOf[java.lang.Number]), ColumnAttributes(32L, 8, classOf[java.lang.Number]), ColumnAttributes(40L, 8, classOf[java.lang.Number]), ColumnAttributes(48L, 8, classOf[java.lang.Number]), ColumnAttributes(56L, 8, classOf[java.lang.Number])),
     Vector(ColumnFormat(Left(""),0,0),ColumnFormat(Left(""),0,0),ColumnFormat(Left(""),0,0),ColumnFormat(Left(""),0,0),ColumnFormat(Left(""),0,0),ColumnFormat(Left(""),0,0),ColumnFormat(Left(""),0,0),ColumnFormat(Left(""),0,0)),
     Vector(ColumnLabel(Left("")),ColumnLabel(Left("")),ColumnLabel(Left("")),ColumnLabel(Left("")),ColumnLabel(Left("")),ColumnLabel(Left("")),ColumnLabel(Left("")),ColumnLabel(Left(""))),
-    Seq()
+    DefaultFileColumns, DefaultDataPointers, Seq()
   )
-
-  private val DefaultFileColumns = Vector(
-    Column(Some(0), Some("x1"), ColumnLabel(Left("")), ColumnFormat(Left(""),0,0), Some(classOf[java.lang.Number]), Some(8)),
-    Column(Some(1), Some("x2"), ColumnLabel(Left("")), ColumnFormat(Left(""),0,0), Some(classOf[java.lang.Number]), Some(8)),
-    Column(Some(2), Some("x3"), ColumnLabel(Left("")), ColumnFormat(Left(""),0,0), Some(classOf[java.lang.Number]), Some(8)),
-    Column(Some(3), Some("x4"), ColumnLabel(Left("")), ColumnFormat(Left(""),0,0), Some(classOf[java.lang.Number]), Some(8)),
-    Column(Some(4), Some("x5"), ColumnLabel(Left("")), ColumnFormat(Left(""),0,0), Some(classOf[java.lang.Number]), Some(8)),
-    Column(Some(5), Some("x6"), ColumnLabel(Left("")), ColumnFormat(Left(""),0,0), Some(classOf[java.lang.Number]), Some(8)),
-    Column(Some(6), Some("x7"), ColumnLabel(Left("")), ColumnFormat(Left(""),0,0), Some(classOf[java.lang.Number]), Some(8)),
-    Column(Some(7), Some("x8"), ColumnLabel(Left("")), ColumnFormat(Left(""),0,0), Some(classOf[java.lang.Number]), Some(8)))
 
   private def DefaultFileNameStream: InputStream = new BufferedInputStream(
     Thread.currentThread.getContextClassLoader.getResourceAsStream(DefaultFileName))
@@ -237,13 +247,13 @@ class SasFileParserSuite extends FlatSpec with SasFileConstants {
     val signature = SasFileParser.readSubheaderSignature(file, fileHeader.properties, pointer.offset)
     val index = SasFileParser.chooseSubheaderClass(fileHeader.properties, signature, pointer.compression, pointer._type)
 
-    assert(index == SubheaderIndexes.RowSizeSubheaderIndex)
+    assert(index == Some(SubheaderIndexes.RowSizeSubheaderIndex))
 
     val pointer2 = SasFileParser.readSubheaderPointer(file, fileHeader.properties, 1)
     val signature2 = SasFileParser.readSubheaderSignature(file, fileHeader.properties, pointer2.offset)
     val index2 = SasFileParser.chooseSubheaderClass(fileHeader.properties, signature2, pointer2.compression, pointer2._type)
 
-    assert(index2 == SubheaderIndexes.ColumnSizeSubheaderIndex)
+    assert(index2 == Some(SubheaderIndexes.ColumnSizeSubheaderIndex))
 
     file.close()
   }
@@ -382,42 +392,20 @@ class SasFileParserSuite extends FlatSpec with SasFileConstants {
     assert(cols == DefaultFileColumns)
     assert(cols == res.properties.columns, "columns should be cached")
     assert(res.properties == DefaultFileMetadata)
-
   }
 
   it should "process all of metadata" in {
     val file = DefaultFileNameStream
 
-    SasFileParser.getMetadataFromSasFile(file)
+    val properties = SasFileParser.getMetadataFromSasFile(file)
+    assert(properties == DefaultFileMetadata)
+  }
+
+  it should "return the proper row when reading the data row subheader" in {
+    val file = NoCompressionFileNameStream//DefaultFileNameStream
+
+    val properties = SasFileParser.getMetadataFromSasFile(file)
 
   }
 
-//  it should "return the proper row when reading the data row subheader" in {
-//    val file = NoCompressionFileNameStream//DefaultFileNameStream
-//
-//    val fileHeader = SasFileParser.readSasFileHeader(file)
-//
-//    val pointerColumnSize = SasFileParser.readSubheaderPointer(file, fileHeader.properties, SubheaderIndexes.ColumnSizeSubheaderIndex.id)
-//    val propertiesColumnSize = subheaderIndexToClass(SubheaderIndexes.ColumnSizeSubheaderIndex)
-//      .processSubheader(file, fileHeader.properties, pointerColumnSize.offset, pointerColumnSize.length)
-//
-//    val pointerText = SasFileParser.readSubheaderPointer(file, propertiesColumnSize, SubheaderIndexes.ColumnTextSubheaderIndex.id)
-//    val propertiesText = subheaderIndexToClass(SubheaderIndexes.ColumnTextSubheaderIndex)
-//      .processSubheader(file, propertiesColumnSize, pointerText.offset, pointerText.length)
-//
-//    val pointerColAtt = SasFileParser.readSubheaderPointer(file, propertiesText, SubheaderIndexes.ColumnAttributesSubheaderIndex.id)
-//    val propertiesColAtt = subheaderIndexToClass(SubheaderIndexes.ColumnAttributesSubheaderIndex)
-//      .processSubheader(file, propertiesText, pointerColAtt.offset, pointerColAtt.length)
-//
-//    val pointerDataRow = SasFileParser.readSubheaderPointer(file, propertiesColAtt, SubheaderIndexes.DataSubheaderIndex.id)
-//    val propertiesDataRow = subheaderIndexToClass(SubheaderIndexes.DataSubheaderIndex)
-//      .processSubheader(file, propertiesColAtt, pointerDataRow.offset, pointerDataRow.length)
-//
-//    assert(propertiesDataRow != null)
-//  }
-
-
-
-
-
-  }
+}
