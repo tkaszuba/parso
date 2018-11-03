@@ -842,6 +842,8 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
 
   case class PageMetadataReadResult(subheaderIndex: Option[SubheaderIndexes], pointer: SubheaderPointer, properties: SasFileProperties)
 
+  case class PageRowReadResult(row: Seq[Option[Any]], lastRow: Boolean)
+
   /**
     * The result of parsing a SAS file
     *
@@ -1040,24 +1042,13 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
         (LiteralsToDecompressor(properties.compressionMethod.get).
           decompressRow(rowOffset.toInt, rowLength.toInt, properties.rowLength.toInt, page), 0)
       else
-        (page, rowOffset.toInt) //I think this should be 0
+        (page, rowOffset.toInt)
     }
 
     (0 until properties.columnsCount.toInt).
       takeWhile(properties.columnAttributes(_).length != 0).
       map(processElement(source._1, properties, source._2, _))
-
-    //    for (currentColumnIndex <- properties.columnsCount()
-//      && columnsDataLength.get(currentColumnIndex) != 0) {
-//              rowElements(currentColumnIndex) = processElement(source._1, source._2, currentColumnIndex)
-//      if (properties.columnNames == null)
-//        rowElements(currentColumnIndex) = processElement(source._1, source._2, currentColumnIndex)
-//      else {
-//        val name = columns.get(currentColumnIndex).getName
-//        if (columnNames.contains(name))
-//          rowElements(columnNames.indexOf(name)) = processElement(source._1, source._2, currentColumnIndex)
-//      }
-
+    
   }
 
   /**
@@ -1358,6 +1349,41 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
   }
 
   /**
+    * Reads all rows from the sas7bdat file. For each row, only the columns defined in the list are read.
+    *
+    * @param columnNames list of column names which should be processed.
+    * @return an array of array objects whose elements can be objects of the following classes: double, long,
+    *         int, byte[], Date depending on the column they are in.
+    */
+  def readAll(fileStream: InputStream, meta: SasMetadata): Seq[Seq[Option[Any]]] = {
+
+    def read(i: Int = 0, acc: Seq[Seq[Option[Any]]] = Seq()): Seq[Seq[Option[Any]]] = {
+      if (i < meta.properties.rowCount ) {
+
+        val res = {
+          try
+            readNext(fileStream, meta, i)
+          catch {
+            case e: IOException =>
+              logger.warn("I/O exception, skipping the rest of the file. " +
+                "Rows read: " + i + ". Expected number of rows from metadata: " + meta.properties.rowCount, e)
+              return acc
+          }
+        }
+
+        if (res.lastRow)
+          ???
+        else
+          read(i+1, acc :+ res.row)
+      }
+      else
+        acc
+    }
+
+    read()
+  }
+
+  /**
     * The function to read next row from current sas7bdat file.
     *
     * @param columnNames list of column names which should be processed.
@@ -1365,7 +1391,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
     * @throws IOException if reading from the { @link SasFileParser#sasFileStream} stream is impossible.
     */
   @throws[IOException]
-  def readNext(fileStream: InputStream, meta: SasMetadata, currentRowOnPageIndex: Int = 0): Seq[Option[Any]] = {
+  def readNext(fileStream: InputStream, meta: SasMetadata, currentRowOnPageIndex: Int = 0): PageRowReadResult = {
     //  if ({currentRowInFileIndex += 1; currentRowInFileIndex - 1} >= sasFileProperties.getRowCount || eof)  { return null}
     val bitOffset = getBitOffset(meta.properties)
     meta.pageHeader.pageType match {
@@ -1378,24 +1404,21 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
 //          readNextPage
 //          currentRowOnPageIndex = 0
 //        }
+        ???
       }
       case PageMixType => {
         val subheaderPointerLength = getSubheaderPointerLength(meta.properties)
         val alignCorrection = (bitOffset + SubheaderPointersOffset + meta.pageHeader.subheaderCount * subheaderPointerLength) % BitsInByte
-//        val currentRowOnPageIndex =+ 1
+        val offset = bitOffset + SubheaderPointersOffset + alignCorrection +
+          meta.pageHeader.subheaderCount * subheaderPointerLength + currentRowOnPageIndex * meta.properties.rowLength
 
-        val page = getBytesFromFile(fileStream, 0, Seq(0L), Seq(meta.properties.pageLength)).readBytes
+        val page = getBytesFromFile(fileStream, 0, Seq(offset), Seq(meta.properties.pageLength)).readBytes
+        val currentRow = processByteArrayWithData(page(0), meta.properties, 0L, meta.properties.rowLength)
 
-        val currentRow = processByteArrayWithData(page(0), meta.properties, bitOffset + SubheaderPointersOffset +
-          alignCorrection + meta.pageHeader.subheaderCount * subheaderPointerLength +
-          currentRowOnPageIndex * meta.properties.rowLength, meta.properties.rowLength)
-
-        return currentRow
-
-//        if (currentRowOnPageIndex == Math.min(properties.rowCount, properties.mixPageRowCount)) {
-//          readNextPage
-//          currentRowOnPageIndex = 0
-//        }
+        if (currentRowOnPageIndex == Math.min(meta.properties.rowCount, meta.properties.mixPageRowCount))
+          PageRowReadResult(currentRow, true)
+        else
+          PageRowReadResult(currentRow, false)
       }
       case PageDataType => {
         ???
@@ -1409,9 +1432,6 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
 
       }
     }
-    ???
-    //return util.Arrays.copyOf(currentRow, currentRow.length)
-
   }
 
   /**

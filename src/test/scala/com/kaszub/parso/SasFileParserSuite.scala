@@ -401,13 +401,25 @@ class SasFileParserSuite extends FlatSpec with SasFileConstants {
     assert(properties == DefaultFileMetadata)
   }
 
-  it should "return the proper row when reading the data row subheader" in {
-    val file = NoCompressionFileNameStream//DefaultFileNameStream
+  "Reading a row" should "return the proper row when reading non compressed data" in {
+    val file = NoCompressionFileNameStream
 
     val meta = SasFileParser.getMetadataFromSasFile(file)
-    val row = SasFileParser.readNext(file, meta)
+    val res = SasFileParser.readNext(file, meta)
+    val row = res.row
 
+    assert(!res.lastRow)
     assert(row == Vector(Some(5.1), Some(3.5), Some(1.4), Some(0.2), Some("Iris-setosa")))
+  }
+
+  it should "read all rows when reading non compressed data" in {
+    val file = NoCompressionFileNameStream
+
+    val meta = SasFileParser.getMetadataFromSasFile(file)
+    val rows = SasFileParser.readAll(file, meta)
+
+    assert(rows.size == meta.properties.rowCount)
+
   }
 
 }
