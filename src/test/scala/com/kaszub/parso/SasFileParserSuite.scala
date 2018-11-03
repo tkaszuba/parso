@@ -5,7 +5,7 @@ import java.nio.ByteOrder
 import java.time.{ZoneOffset, ZonedDateTime}
 
 import com.kaszub.parso.impl.SasFileParser.SubheaderIndexes.SubheaderIndexes
-import com.kaszub.parso.impl.SasFileParser.{SubheaderIndexes, SubheaderPointer, subheaderIndexToClass}
+import com.kaszub.parso.impl.SasFileParser.{SasMetadata, SubheaderIndexes, SubheaderPointer, subheaderIndexToClass}
 import com.kaszub.parso.impl.{SasFileConstants, SasFileParser}
 import com.typesafe.scalalogging.Logger
 import org.scalatest.FlatSpec
@@ -385,7 +385,7 @@ class SasFileParserSuite extends FlatSpec with SasFileConstants {
     val fileHeader = SasFileParser.readSasFileHeader(file)
     val pageHeader = SasFileParser.readPageHeader(file, fileHeader.properties)
 
-    val res = SasFileParser.processSasFilePageMeta(file, pageHeader, fileHeader.properties)
+    val res = SasFileParser.processSasFilePageMeta(file, SasMetadata(pageHeader, fileHeader.properties))
     val cols = res.properties.getColumns()
 
     assert(res.success)
@@ -397,15 +397,17 @@ class SasFileParserSuite extends FlatSpec with SasFileConstants {
   it should "process all of metadata" in {
     val file = DefaultFileNameStream
 
-    val properties = SasFileParser.getMetadataFromSasFile(file)
+    val properties = SasFileParser.getMetadataFromSasFile(file).properties
     assert(properties == DefaultFileMetadata)
   }
 
   it should "return the proper row when reading the data row subheader" in {
     val file = NoCompressionFileNameStream//DefaultFileNameStream
 
-    val properties = SasFileParser.getMetadataFromSasFile(file)
+    val meta = SasFileParser.getMetadataFromSasFile(file)
+    val row = SasFileParser.readNext(file, meta)
 
+    assert(row == Vector(Some(5.1), Some(3.5), Some(1.4), Some(0.2), Some("Iris-setosa")))
   }
 
 }

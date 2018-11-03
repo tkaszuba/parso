@@ -854,7 +854,7 @@ trait SasFileConstants {
       * The date formats to store the day, month, and year. Appear in the data of the
       * {@link SasFileParser.FormatAndLabelSubheader} subheader and are stored in {@link com.epam.parso.Column#format}.
       */
-    val DATE_FORMAT_STRINGS = Set(
+    val DateFormatStrings = Set(
       "B8601DA",
       "E8601DA",
       "DATE",
@@ -910,7 +910,7 @@ trait SasFileConstants {
       * Appear in the data of the {@link SasFileParser.FormatAndLabelSubheader} subheader
       * and are stored in {@link com.epam.parso.Column#format}.
       */
-    val DATE_TIME_FORMAT_STRINGS = Set(
+    val DateTimeFormatStrings = Set(
       "B8601DN",
       "B8601DT",
       "B8601DX",
