@@ -821,8 +821,9 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
       */
     def processSubheader(inputStream: InputStream, properties: SasFileProperties, offset: Long, length: Long, copy: Boolean): SasFileProperties = {
       val page = getBytesFromFile(inputStream, 0, Seq(offset), Seq(length.toInt)).readBytes
-      //properties.setRow(processByteArrayWithData(page(0), properties, offset, length))
-      SasFileProperties(row = processByteArrayWithData(page(0), properties, offset, length))
+      val curRow = processByteArrayWithData(page(0), properties, 0, length)
+
+      if (copy) properties.setRow(curRow) else SasFileProperties(row = curRow)
     }
   }
 
@@ -1048,7 +1049,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
     (0 until properties.columnsCount.toInt).
       takeWhile(properties.columnAttributes(_).length != 0).
       map(processElement(source._1, properties, source._2, _))
-    
+
   }
 
   /**
@@ -1397,14 +1398,14 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
     meta.pageHeader.pageType match {
       case PageMetaType1 | PageMetaType2 => {
         require(!meta.properties.dataSubheaderPointers.isEmpty, "The data subheader pointers can't be missing")
-        val dataSubheaderPointer = meta.properties.dataSubheaderPointers.head //todo: What if there is more than one pointer???
-//        return subheaderIndexToClass(SubheaderIndexes.DataSubheaderIndex).
-//            processSubheader(fileStream, meta.properties, dataSubheaderPointer.offset, dataSubheaderPointer.length, copy = false).row
-//        if (currentRowOnPageIndex == currentPageDataSubheaderPointers.size) {
-//          readNextPage
-//          currentRowOnPageIndex = 0
-//        }
-        ???
+        val dataSubheaderPointer = meta.properties.dataSubheaderPointers(currentRowOnPageIndex)
+        //Assumes that the file stream is at the beginning of the page
+        val row = subheaderIndexToClass(SubheaderIndexes.DataSubheaderIndex).
+            processSubheader(fileStream, meta.properties, dataSubheaderPointer.offset, dataSubheaderPointer.length, false).row
+        if (currentRowOnPageIndex == meta.properties.dataSubheaderPointers.size)
+          PageRowReadResult(row, true)
+        else
+          PageRowReadResult(row, false)
       }
       case PageMixType => {
         val subheaderPointerLength = getSubheaderPointerLength(meta.properties)
@@ -1413,23 +1414,23 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
           meta.pageHeader.subheaderCount * subheaderPointerLength + currentRowOnPageIndex * meta.properties.rowLength
 
         val page = getBytesFromFile(fileStream, 0, Seq(offset), Seq(meta.properties.pageLength)).readBytes
-        val currentRow = processByteArrayWithData(page(0), meta.properties, 0L, meta.properties.rowLength)
+        val row = processByteArrayWithData(page(0), meta.properties, 0L, meta.properties.rowLength)
 
         if (currentRowOnPageIndex == Math.min(meta.properties.rowCount, meta.properties.mixPageRowCount))
-          PageRowReadResult(currentRow, true)
+          PageRowReadResult(row, true)
         else
-          PageRowReadResult(currentRow, false)
+          PageRowReadResult(row, false)
       }
       case PageDataType => {
-        ???
-//        val currentRowOnPageIndex =+ 1
-//        val currentRow = processByteArrayWithData(
-//          bitOffset + SubheaderPointersOffset + currentRowOnPageIndex * properties.rowLength, properties.rowLength, properties.getColumns)
-//        if (currentRowOnPageIndex == currentPageBlockCount) {
-//          readNextPage
-//          currentRowOnPageIndex = 0
-//        }
+        val offset = bitOffset + SubheaderPointersOffset + currentRowOnPageIndex * meta.properties.rowLength
 
+        val page = getBytesFromFile(fileStream, 0, Seq(offset), Seq(meta.properties.pageLength)).readBytes
+        val row = processByteArrayWithData(page(0), meta.properties, 0L, meta.properties.rowLength)
+
+        if (currentRowOnPageIndex == meta.pageHeader.blockCount)
+          PageRowReadResult(row, true)
+        else
+          PageRowReadResult(row, false)
       }
     }
   }

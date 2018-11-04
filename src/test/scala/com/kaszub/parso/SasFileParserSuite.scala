@@ -205,6 +205,8 @@ class SasFileParserSuite extends FlatSpec with SasFileConstants {
     assert(pageHeader.pageType == 512)
     assert(pageHeader.blockCount == 2514)
     assert(pageHeader.subheaderCount == 21)
+
+    file.close()
   }
 
   it should "return the proper number of parsed pointers" in {
@@ -316,6 +318,8 @@ class SasFileParserSuite extends FlatSpec with SasFileConstants {
     assert(properties.compressionMethod == None)
     assert(properties.columnsNamesBytes.size == 1)
     assert(properties.columnsNamesBytes(0).size == 0)
+
+    file.close()
   }
 
 
@@ -377,6 +381,8 @@ class SasFileParserSuite extends FlatSpec with SasFileConstants {
       .processSubheader(file, propertiesText, pointer.offset, pointer.length)
 
     assert(properties == propertiesText)
+
+    file.close()
   }
 
   it should "return the merged properties" in {
@@ -392,6 +398,8 @@ class SasFileParserSuite extends FlatSpec with SasFileConstants {
     assert(cols == DefaultFileColumns)
     assert(cols == res.properties.columns, "columns should be cached")
     assert(res.properties == DefaultFileMetadata)
+
+    file.close()
   }
 
   it should "process all of metadata" in {
@@ -399,6 +407,8 @@ class SasFileParserSuite extends FlatSpec with SasFileConstants {
 
     val properties = SasFileParser.getMetadataFromSasFile(file).properties
     assert(properties == DefaultFileMetadata)
+
+    file.close()
   }
 
   "Reading a row" should "return the proper row when reading non compressed data" in {
@@ -410,6 +420,8 @@ class SasFileParserSuite extends FlatSpec with SasFileConstants {
 
     assert(!res.lastRow)
     assert(row == Vector(Some(5.1), Some(3.5), Some(1.4), Some(0.2), Some("Iris-setosa")))
+
+    file.close()
   }
 
   it should "read all rows when reading non compressed data" in {
@@ -420,6 +432,23 @@ class SasFileParserSuite extends FlatSpec with SasFileConstants {
 
     assert(rows.size == meta.properties.rowCount)
 
+    file.close()
   }
+
+  it should "return the proper row when reading compressed data" in {
+    val file = DefaultFileNameStream
+
+    val meta = SasFileParser.getMetadataFromSasFile(file)
+    val res = SasFileParser.readNext(file, meta)
+    val row = res.row
+
+    assert(!res.lastRow)
+    assert(row == Vector(Some(0), Some(1.7728319648062687), Some(1.5596184510415154),
+      Some(-0.07548413371237805), Some(-0.12731038690566573), Some(1.271609711166061),
+      Some(-0.3734850889273111), Some(-0.49147829993398395)))
+
+    file.close()
+  }
+
 
 }

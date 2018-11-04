@@ -42,7 +42,7 @@ case class SasFileProperties(isU64: Boolean = false, compressionMethod: Option[S
                              columnNames: Seq[Either[String, ColumnMissingInfo]] = Seq(),
                              columnAttributes: Seq[ColumnAttributes] = Seq(), columnFormats: Seq[ColumnFormat] = Seq(),
                              columnLabels: Seq[ColumnLabel] = Seq(), columns: Seq[Column] = Seq(),
-                             dataSubheaderPointers: Seq[SubheaderPointer] = Seq(),row: Seq[Any] = Seq()) {
+                             dataSubheaderPointers: Seq[SubheaderPointer] = Seq(),row: Seq[Option[Any]] = Seq()) {
 
   /**
     * Perform a copy of the properties
@@ -64,7 +64,7 @@ case class SasFileProperties(isU64: Boolean = false, compressionMethod: Option[S
                    columnAttributes: Seq[ColumnAttributes] = this.columnAttributes,
                    columnFormats: Seq[ColumnFormat] = this.columnFormats, columnLabels: Seq[ColumnLabel] = this.columnLabels,
                    columns: Seq[Column] = this.columns,
-                   dataSubheaderPointers: Seq[SubheaderPointer] = this.dataSubheaderPointers, row: Seq[Any] = this.row
+                   dataSubheaderPointers: Seq[SubheaderPointer] = this.dataSubheaderPointers, row: Seq[Option[Any]] = this.row
           ) =
     SasFileProperties(
       isU64, compressionMethod, endianness, encoding, sessionEncoding, name, fileType, dateCreated, dateModified,
@@ -193,7 +193,7 @@ case class SasFileProperties(isU64: Boolean = false, compressionMethod: Option[S
     * @param val value to be set.
     * @return result new Sas file properties.
     */
-  def setRow(value: Seq[Any]): SasFileProperties = copy(row = value)
+  def setRow(value: Seq[Option[Any]]): SasFileProperties = copy(row = value)
 
   /**
     * Set the columns and return new properties
