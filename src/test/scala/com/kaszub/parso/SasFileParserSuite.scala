@@ -450,5 +450,29 @@ class SasFileParserSuite extends FlatSpec with SasFileConstants {
     file.close()
   }
 
+  //todo: move up with the metadata tests
+  "Reading the next page" should "get the correct page" in {
+    val file = DefaultFileNameStream
+
+    val meta = SasFileParser.getMetadataFromSasFile(file)
+    val meta2 = SasFileParser.readNextPage(file, meta.properties)
+
+    assert(meta2 != null)
+
+    file.close()
+  }
+
+  it should "read all rows when reading compressed data" in {
+    val file = DefaultFileNameStream
+
+    val meta = SasFileParser.getMetadataFromSasFile(file)
+    val rows = SasFileParser.readAll(file, meta)
+
+    assert(rows.size == meta.properties.rowCount)
+
+    file.close()
+  }
+
+
 
 }
