@@ -383,7 +383,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
       * @throws IOException if reading from the { @link SasFileParser#sasFileStream} stream is impossible.
       */
     @throws[IOException]
-    def processSubheader(inputStream: InputStream, properties: SasFileProperties, offset: Long, length: Long, copy: Boolean = true): SasFileProperties
+    def processSubheader(inputStream: SasPageReader, properties: SasFileProperties, offset: Long, length: Long, copy: Boolean = true): SasFileProperties
   }
 
   /**
@@ -403,7 +403,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
       * @throws IOException if reading from the { @link SasFileParser#sasFileStream} stream is impossible.
       */
     @throws[IOException]
-    def processSubheader(inputStream: InputStream, properties: SasFileProperties, offset: Long, length: Long, copy: Boolean): SasFileProperties = {
+    def processSubheader(inputStream: SasPageReader, properties: SasFileProperties, offset: Long, length: Long, copy: Boolean): SasFileProperties = {
       val intOrLongLength = if (properties.isU64) BytesInLong else BytesInInt
       val offsetSubheader = Seq(
         offset + ROW_LENGTH_OFFSET_MULTIPLIER * intOrLongLength,
@@ -454,7 +454,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
       * @throws IOException if reading from the { @link SasFileParser#sasFileStream} stream is impossible.
       */
     @throws[IOException]
-    def processSubheader(inputStream: InputStream, properties: SasFileProperties, offset: Long, length: Long, copy: Boolean): SasFileProperties = {
+    def processSubheader(inputStream: SasPageReader, properties: SasFileProperties, offset: Long, length: Long, copy: Boolean): SasFileProperties = {
       val intOrLongLength = if (properties.isU64) BytesInLong else BytesInInt
       val offsetSubheader = Seq(offset + intOrLongLength)
       val lengthSubheader = Seq(intOrLongLength)
@@ -482,7 +482,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
       * @param subheaderLength the subheader length.
       * @throws IOException if reading from the { @link SasFileParser#sasFileStream} stream is impossible.
       */
-    def processSubheader(inputStream: InputStream, properties: SasFileProperties, offset: Long, length: Long, copy: Boolean): SasFileProperties = properties
+    def processSubheader(inputStream: SasPageReader, properties: SasFileProperties, offset: Long, length: Long, copy: Boolean): SasFileProperties = properties
   }
 
   /**
@@ -500,7 +500,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
       * @param subheaderLength the subheader length.
       * @throws IOException if reading from the { @link SasFileParser#sasFileStream} stream is impossible.
       */
-    def processSubheader(inputStream: InputStream, properties: SasFileProperties, offset: Long, length: Long, copy: Boolean): SasFileProperties = {
+    def processSubheader(inputStream: SasPageReader, properties: SasFileProperties, offset: Long, length: Long, copy: Boolean): SasFileProperties = {
       val intOrLongLength = if (properties.isU64) BytesInLong else BytesInInt
       val offsetSubheader = Seq(offset + intOrLongLength)
       val lengthByteBuffer = Seq(TextBlockSizeLength)
@@ -542,7 +542,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
       * @param offset the offset at which the subheader is located.
       * @param length the subheader length.
       */
-    def processSubheader(inputStream: InputStream, properties: SasFileProperties, offset: Long, length: Long, copy: Boolean): SasFileProperties = {
+    def processSubheader(inputStream: SasPageReader, properties: SasFileProperties, offset: Long, length: Long, copy: Boolean): SasFileProperties = {
       val intOrLongLength = if (properties.isU64) BytesInLong else BytesInInt
       val columnNamePointersCount = (length - 2 * intOrLongLength - 12) / 8
 
@@ -586,7 +586,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
       * @param subheaderOffset the offset at which the subheader is located.
       * @param subheaderLength the subheader length.
       */
-    def processSubheader(inputStream: InputStream, properties: SasFileProperties, offset: Long, length: Long, copy: Boolean): SasFileProperties = {
+    def processSubheader(inputStream: SasPageReader, properties: SasFileProperties, offset: Long, length: Long, copy: Boolean): SasFileProperties = {
       val intOrLongLength = if (properties.isU64) BytesInLong else BytesInInt
       val columnAttributesVectorsCount = (length - 2 * intOrLongLength - 12) / (intOrLongLength + 8)
 
@@ -632,7 +632,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
       * @param subheaderOffset the offset at which the subheader is located.
       * @param subheaderLength the subheader length.
       */
-    def processSubheader(inputStream: InputStream, properties: SasFileProperties, offset: Long, length: Long, copy: Boolean): SasFileProperties = {
+    def processSubheader(inputStream: SasPageReader, properties: SasFileProperties, offset: Long, length: Long, copy: Boolean): SasFileProperties = {
       val intOrLongLength = if (properties.isU64) BytesInLong else BytesInInt
       val formatOffset = Seq(
         offset + ColumnFormatWidthOffset + intOrLongLength,
@@ -695,7 +695,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
       * @param offset the offset at which the subheader is located.
       * @param length the subheader length.
       */
-    def processSubheader(inputStream: InputStream, properties: SasFileProperties, offset: Long, length: Long, copy: Boolean): SasFileProperties = properties
+    def processSubheader(inputStream: SasPageReader, properties: SasFileProperties, offset: Long, length: Long, copy: Boolean): SasFileProperties = properties
   }
 
   /**
@@ -710,7 +710,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
       * @param offset the offset at which the subheader is located.
       * @param length the subheader length.
       */
-    def processSubheader(inputStream: InputStream, properties: SasFileProperties, offset: Long, length: Long, copy: Boolean): SasFileProperties = {
+    def processSubheader(inputStream: SasPageReader, properties: SasFileProperties, offset: Long, length: Long, copy: Boolean): SasFileProperties = {
       val page = getBytesFromFile(inputStream, 0, Seq(offset), Seq(length.toInt)).readBytes
       val curRow = processByteArrayWithData(page(0), properties, 0, length)
 
@@ -747,10 +747,10 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
 
   case class PageHeader(pageType: Int = 0, blockCount: Int = 0, subheaderCount: Int = 0, eof: Boolean = false)
 
-  def readPage(stream: InputStream, properties: SasFileProperties): BytesReadResult =
+  def readPage(stream: SasPageReader, properties: SasFileProperties): BytesReadResult =
     getBytesFromFile(stream, 0L, Seq(0L), Seq(properties.pageLength))
 
-  private def skipStream(stream: InputStream, skipTo: Long): Try[Long] = {
+  private def skipStream(stream: SasPageReader, skipTo: Long): Try[Long] = {
     Success((0L to skipTo).foldLeft(0L)((actuallySkipped, j) => {
       //println(actuallySkipped)
       if (actuallySkipped >= skipTo) return Success(actuallySkipped)
@@ -758,7 +758,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
         actuallySkipped + stream.skip(skipTo - actuallySkipped)
       catch {
         case e: IOException => return Failure(throw new IOException(EmptyInputStream))
-        case e => return Failure(e)
+        case e: Throwable => return Failure(e)
       }
     }))
   }
@@ -793,7 +793,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
     * @throws IOException if reading from the { @link SasFileParser#sasFileStream} stream is impossible.
     */
   @throws[IOException]
-  def getBytesFromFile(fileStream: InputStream, position: Long, offset: Seq[Long], length: Seq[Int], rewind: Boolean = true): BytesReadResult = {
+  def getBytesFromFile(fileStream: SasPageReader, position: Long, offset: Seq[Long], length: Seq[Int], rewind: Boolean = true): BytesReadResult = {
 
     if (rewind)
       fileStream.mark(Int.MaxValue)
@@ -843,7 +843,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
     * @throws IOException if reading from the {@link SasFileParser#sasFileStream} stream is impossible.
     **/
   @throws[IOException]
-  def readSasFileHeader(fileStream: InputStream): ParseResult = {
+  def readSasFileHeader(fileStream: SasPageReader): ParseResult = {
 
     val offsetForAlign = Seq(Align1Offset, Align2Offset)
     val lengthForAlign = Seq(Align1Length, Align2Length)
@@ -903,7 +903,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
     * @throws IOException if reading from the { @link SasFileParser#sasFileStream} string is impossible.
     */
   @throws[IOException]
-  def readPageHeader(fileStream: InputStream, properties: SasFileProperties): PageHeader = {
+  def readPageHeader(fileStream: SasPageReader, properties: SasFileProperties): PageHeader = {
     val bitOffset = getBitOffset(properties)
     val offset = Seq(bitOffset + PAGE_TYPE_OFFSET, bitOffset + BLOCK_COUNT_OFFSET, bitOffset + SUBHEADER_COUNT_OFFSET)
     val length = Seq(PAGE_TYPE_LENGTH, BLOCK_COUNT_LENGTH, SUBHEADER_COUNT_LENGTH)
@@ -1001,7 +1001,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
     * @throws IOException - appears if reading from the { @link SasFileParser#sasFileStream} stream is impossible.
     */
   @throws[IOException]
-  def getMetadataFromSasFile(fileStream: InputStream): SasMetadata = {
+  def getMetadataFromSasFile(fileStream: SasPageReader): SasMetadata = {
 
     val fileHeader = readSasFileHeader(fileStream)
     val pageHeader = readPageHeader(fileStream, fileHeader.properties)
@@ -1009,7 +1009,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
     val metaResults = processSasFilePageMeta(fileStream, SasMetadata(pageHeader, fileHeader.properties))
 
     //todo: merge with process next page
-    def iterateThroughPages(stream: InputStream, res: MetadataReadResult): SasFileProperties = {
+    def iterateThroughPages(stream: SasPageReader, res: MetadataReadResult): SasFileProperties = {
       if (res.success)
         res.properties
       else {
@@ -1034,7 +1034,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
     * @throws IOException if reading from the { @link SasFileParser#sasFileStream} stream is impossible.
     */
   @throws[IOException]
-  def processSasFilePageMeta(fileStream: InputStream, meta: SasMetadata): MetadataReadResult = {
+  def processSasFilePageMeta(fileStream: SasPageReader, meta: SasMetadata): MetadataReadResult = {
 
     val res: Map[Option[SubheaderIndexes], Seq[SasFileProperties]] =
       if ((meta.pageHeader.pageType == PageMetaType1) || (meta.pageHeader.pageType == PageMetaType2) || (meta.pageHeader.pageType == PageMixType))
@@ -1079,7 +1079,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
     * @throws IOException if reading from the { @link SasFileParser#sasFileStream} string is impossible.
     */
   @throws[IOException]
-  def readPageMetadata(fileStream: InputStream, meta: SasMetadata): Map[Option[SubheaderIndexes], Seq[SasFileProperties]] = {
+  def readPageMetadata(fileStream: SasPageReader, meta: SasMetadata): Map[Option[SubheaderIndexes], Seq[SasFileProperties]] = {
     //todo: Make non copying work
     def getNewProperties(subheaderIndex: Option[SubheaderIndexes],
                          subheaderPointer: SubheaderPointer,
@@ -1159,7 +1159,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
     * @throws IOException if reading from the { @link SasFileParser#sasFileStream} stream is impossible.
     */
   @throws[IOException]
-  def readSubheaderSignature(fileStream: InputStream, properties: SasFileProperties, pointerOffset: Long): Long = {
+  def readSubheaderSignature(fileStream: SasPageReader, properties: SasFileProperties, pointerOffset: Long): Long = {
     val intOrLongLength = if (properties.isU64) BytesInLong else BytesInInt
     val offsetMass = Seq(pointerOffset)
     val lengthMass = Seq(intOrLongLength)
@@ -1199,7 +1199,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
     * @throws IOException if reading from the { @link SasFileParser#sasFileStream} stream is impossible.
     */
   @throws[IOException]
-  def readSubheaderPointer(fileStream: InputStream, properties: SasFileProperties, pointerIndex: Int)
+  def readSubheaderPointer(fileStream: SasPageReader, properties: SasFileProperties, pointerIndex: Int)
                           (implicit pointerOffset: Long = getBitOffset(properties).toLong + SubheaderPointersOffset): SubheaderPointer = {
 
     val intOrLongLength = if (properties.isU64) BytesInLong else BytesInInt
@@ -1251,7 +1251,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
     * @return an array of array objects whose elements can be objects of the following classes: double, long,
     *         int, byte[], Date depending on the column they are in.
     */
-  def readAll(fileStream: InputStream, meta: SasMetadata): Seq[Seq[Option[Any]]] = {
+  def readAll(fileStream: SasPageReader, meta: SasMetadata): Seq[Seq[Option[Any]]] = {
 
     def read(total: Long, i: Int, curMeta: SasMetadata, acc: Seq[Seq[Option[Any]]]): Seq[Seq[Option[Any]]] = {
       if (total < meta.properties.rowCount) {
@@ -1265,7 +1265,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
               return acc
           }
         }
-        if (res.lastRow)
+        if (res.lastRow && total < meta.properties.rowCount - 1)
           read(total + 1, 0, readNextPage(fileStream, curMeta.properties), acc :+ res.row)
         else
           read(total + 1, i + 1, curMeta, acc :+ res.row)
@@ -1285,7 +1285,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
     * @throws IOException if reading from the { @link SasFileParser#sasFileStream} stream is impossible.
     */
   @throws[IOException]
-  def readNext(fileStream: InputStream, meta: SasMetadata, currentRowOnPageIndex: Int = 0): PageRowReadResult = {
+  def readNext(fileStream: SasPageReader, meta: SasMetadata, currentRowOnPageIndex: Int = 0): PageRowReadResult = {
     if (meta.pageHeader.eof) return PageRowReadResult(Seq(), true)
 
     val bitOffset = getBitOffset(meta.properties)
@@ -1339,7 +1339,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
     * @throws IOException if reading from the { @link SasFileParser#sasFileStream} stream is impossible.
     */
   @throws[IOException]
-  def readNextPage(inputStream: InputStream, properties: SasFileProperties): SasMetadata = {
+  def readNextPage(inputStream: SasPageReader, properties: SasFileProperties): SasMetadata = {
     val meta = processNextPage(inputStream, properties)
 
     if (meta.pageHeader.pageType != PageMetaType1 && meta.pageHeader.pageType != PageMetaType2 &&
@@ -1355,7 +1355,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
     * @throws IOException if reading from the { @link SasFileParser#sasFileStream} string is impossible.
     */
   @throws[IOException]
-  private def processNextPage(inputStream: InputStream, properties: SasFileProperties): SasMetadata = {
+  private def processNextPage(inputStream: SasPageReader, properties: SasFileProperties): SasMetadata = {
 
     skipStream(inputStream, properties.pageLength).get
     val page = readPageHeader(inputStream, properties)

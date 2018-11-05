@@ -1,11 +1,11 @@
 package com.kaszub.parso
 
-import java.io.{BufferedInputStream, InputStream}
+import java.io.BufferedInputStream
 import java.nio.ByteOrder
 import java.time.{ZoneOffset, ZonedDateTime}
 
 import com.kaszub.parso.impl.SasFileParser.SubheaderIndexes.SubheaderIndexes
-import com.kaszub.parso.impl.SasFileParser.{SasMetadata, SubheaderIndexes, SubheaderPointer, subheaderIndexToClass}
+import com.kaszub.parso.impl.SasFileParser._
 import com.kaszub.parso.impl.{SasFileConstants, SasFileParser}
 import com.typesafe.scalalogging.Logger
 import org.scalatest.FlatSpec
@@ -19,6 +19,7 @@ class SasFileParserSuite extends FlatSpec with SasFileConstants {
   private val DefaultFileName = "sas7bdat//all_rand_normal.sas7bdat"
   private val NoCompressionFileName = "sas7bdat//charset_aara.sas7bdat"
   private val ColonFileName = "sas7bdat//colon.sas7bdat"
+  private val MixedDataFileName = "sas7bdat//mixed_data_one.sas7bdat"
 
   private val DefaultFileColumns = Vector(
     Column(Some(0), Some("x1"), ColumnLabel(Left("")), ColumnFormat(Left(""),0,0), Some(classOf[java.lang.Number]), Some(8)),
@@ -57,14 +58,18 @@ class SasFileParserSuite extends FlatSpec with SasFileConstants {
     DefaultFileColumns, DefaultDataPointers, Seq()
   )
 
-  private def DefaultFileNameStream: InputStream = new BufferedInputStream(
-    Thread.currentThread.getContextClassLoader.getResourceAsStream(DefaultFileName))
+  private def DefaultFileNameStream: SasPageReader = SasPageReader(new BufferedInputStream(
+    Thread.currentThread.getContextClassLoader.getResourceAsStream(DefaultFileName)))
 
-  private def NoCompressionFileNameStream: InputStream = new BufferedInputStream(
-    Thread.currentThread.getContextClassLoader.getResourceAsStream(NoCompressionFileName))
+  private def NoCompressionFileNameStream: SasPageReader = SasPageReader(new BufferedInputStream(
+    Thread.currentThread.getContextClassLoader.getResourceAsStream(NoCompressionFileName)))
 
-  private def ColonFileNameStream: InputStream = new BufferedInputStream(
-    Thread.currentThread.getContextClassLoader.getResourceAsStream(ColonFileName))
+  private def ColonFileNameStream: SasPageReader = SasPageReader(new BufferedInputStream(
+    Thread.currentThread.getContextClassLoader.getResourceAsStream(ColonFileName)))
+
+  private def MixedDataFileStream: SasPageReader = SasPageReader(new BufferedInputStream(
+    Thread.currentThread.getContextClassLoader.getResourceAsStream(MixedDataFileName)))
+
 
   "Reading bytes from a SAS file" should "return the proper bytes" in {
     val inputStream = DefaultFileNameStream
@@ -457,18 +462,19 @@ class SasFileParserSuite extends FlatSpec with SasFileConstants {
     val meta = SasFileParser.getMetadataFromSasFile(file)
     val meta2 = SasFileParser.readNextPage(file, meta.properties)
 
-    assert(meta2 != null)
+    assert(meta2.pageHeader == PageHeader(0, 6, 6))
 
     file.close()
   }
 
   it should "read all rows when reading compressed data" in {
-    val file = DefaultFileNameStream
+    val file = MixedDataFileStream
 
     val meta = SasFileParser.getMetadataFromSasFile(file)
     val rows = SasFileParser.readAll(file, meta)
 
     assert(rows.size == meta.properties.rowCount)
+    assert(rows(0)(2) == Some("AAAAAAAA"))
 
     file.close()
   }

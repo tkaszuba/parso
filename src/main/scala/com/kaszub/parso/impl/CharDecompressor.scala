@@ -69,7 +69,7 @@ object CharDecompressor extends Decompressor {
         case 0xF0 =>
           resBytes = resBytes ++ Seq.fill(endOfFirstByte + 2)(0x00)
         case _ =>
-          logger.error("Error control byte: {}", controlByte)
+          logger.error("Error control byte: %s".format(controlByte))
       }
       currentByteIndex+=1
     }
