@@ -28,7 +28,7 @@ object CharDecompressor extends Decompressor {
   def decompressRow(offset: Int, length: Int, resultLength: Int, page: Seq[Byte]): Seq[Byte] = {
 
     var currentByteIndex = 0
-    var newResultByteArray = Seq[Byte]()
+    var resBytes = Seq[Byte]()
 
     while (currentByteIndex < length) {
       val controlByte = page(offset + currentByteIndex) & 0xF0
@@ -39,46 +39,41 @@ object CharDecompressor extends Decompressor {
           if (currentByteIndex != length - 1) {
             val countOfBytesToCopy = (page(offset + currentByteIndex + 1) & 0xFF) + 64 +
               page(offset + currentByteIndex) * 256
-            newResultByteArray = newResultByteArray ++ page.slice(offset + currentByteIndex + 2, countOfBytesToCopy + offset + currentByteIndex + 2)
+            resBytes = resBytes ++ page.slice(offset + currentByteIndex + 2, countOfBytesToCopy + offset + currentByteIndex + 2)
             currentByteIndex += countOfBytesToCopy + 1
           }
         case 0x40 =>
           val copyCounter = endOfFirstByte * 16 + (page(offset + currentByteIndex + 1) & 0xFF)
-          newResultByteArray = newResultByteArray ++ (0 until copyCounter + 18).
-            map(_ => page(offset + currentByteIndex + 2))
+          resBytes = resBytes ++ Seq.fill(copyCounter + 18)(page(offset + currentByteIndex + 2))
           currentByteIndex += 2
         case 0x50 =>
-          newResultByteArray = newResultByteArray ++ (0 until endOfFirstByte * 256 + (page(offset + currentByteIndex + 1) & 0xFF) + 17).
-            map(_ => 0x40)
+          resBytes = resBytes ++ Seq.fill(endOfFirstByte * 256 + (page(offset + currentByteIndex + 1) & 0xFF) + 17)(0x40)
           currentByteIndex += 1
         case 0x60 =>
-          newResultByteArray = newResultByteArray ++ (0 until endOfFirstByte * 256 + (page(offset + currentByteIndex + 1) & 0xFF) + 17).
-            map(_ => 0x20)
+          resBytes = resBytes ++ Seq.fill(endOfFirstByte * 256 + (page(offset + currentByteIndex + 1) & 0xFF) + 17)(0x20)
           currentByteIndex += 1
         case 0x70 =>
-          newResultByteArray = newResultByteArray ++ (0 until endOfFirstByte * 256 + (page(offset + currentByteIndex + 1) & 0xFF) + 17).
-            map(_ => 0x00)
+          resBytes = resBytes ++ Seq.fill(endOfFirstByte * 256 + (page(offset + currentByteIndex + 1) & 0xFF) + 17)(0x00)
           currentByteIndex += 1
         case 0x80 | 0x90 | 0xA0 | 0xB0 =>
-          val countOfBytesToCopy = Math.min(endOfFirstByte + 1 + (controlByte - 0x80),
-            length - (currentByteIndex + 1))
-          newResultByteArray = newResultByteArray ++ page.slice(offset + currentByteIndex + 1, countOfBytesToCopy + offset + currentByteIndex + 1)
+          val countOfBytesToCopy = Math.min(endOfFirstByte + 1 + (controlByte - 0x80), length - (currentByteIndex + 1))
+          resBytes = resBytes ++ page.slice(offset + currentByteIndex + 1, countOfBytesToCopy + offset + currentByteIndex + 1)
           currentByteIndex += countOfBytesToCopy
         case 0xC0 =>
-          newResultByteArray = newResultByteArray ++ (0 until endOfFirstByte + 3).map(_ => page(offset + currentByteIndex + 1))
+          resBytes = resBytes ++ Seq.fill(endOfFirstByte + 3)(page(offset + currentByteIndex + 1))
           currentByteIndex += 1
         case 0xD0 =>
-          newResultByteArray = newResultByteArray ++ (0 until endOfFirstByte + 2).map(_ => 0x40)
+          resBytes = resBytes ++ Seq.fill(endOfFirstByte + 2)(0x40)
         case 0xE0 =>
-          newResultByteArray = newResultByteArray ++ (0 until endOfFirstByte + 2).map(_ => 0x20)
+          resBytes = resBytes ++ Seq.fill(endOfFirstByte + 2)(0x20)
         case 0xF0 =>
-          newResultByteArray = newResultByteArray ++ (0 until endOfFirstByte + 2).map(_ => 0x00)
+          resBytes = resBytes ++ Seq.fill(endOfFirstByte + 2)(0x00)
         case _ =>
           logger.error("Error control byte: {}", controlByte)
       }
       currentByteIndex+=1
     }
 
-    newResultByteArray
+    resBytes
   }
 }
