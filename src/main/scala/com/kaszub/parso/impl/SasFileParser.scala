@@ -411,7 +411,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
         offset + ROW_COUNT_ON_MIX_PAGE_OFFSET_MULTIPLIER * intOrLongLength)
       val offsetLength = Seq(intOrLongLength, intOrLongLength, intOrLongLength)
 
-      val vars = getBytesFromFile(inputStream, 0, offsetSubheader, offsetLength).readBytes
+      val vars = inputStream.readBytes(0, offsetSubheader, offsetLength).readBytes
 
       val isU64 = properties.isU64
       val endianness = properties.endianness
@@ -459,7 +459,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
       val offsetSubheader = Seq(offset + intOrLongLength)
       val lengthSubheader = Seq(intOrLongLength)
 
-      val vars = getBytesFromFile(inputStream, 0, offsetSubheader, lengthSubheader).readBytes
+      val vars = inputStream.readBytes(0, offsetSubheader, lengthSubheader).readBytes
       val colCount = bytesToLong(vars(0), properties.isU64, properties.endianness)
 
       if (copy)
@@ -505,11 +505,11 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
       val offsetSubheader = Seq(offset + intOrLongLength)
       val lengthByteBuffer = Seq(TextBlockSizeLength)
 
-      val vars = getBytesFromFile(inputStream, 0, offsetSubheader, lengthByteBuffer).readBytes
+      val vars = inputStream.readBytes(0, offsetSubheader, lengthByteBuffer).readBytes
       val textBlockSize = byteArrayToByteBuffer(vars(0), properties.endianness).getShort
 
       val lengthFile = Seq(textBlockSize.toInt)
-      val varsFile = getBytesFromFile(inputStream, 0, offsetSubheader, lengthFile).readBytes
+      val varsFile = inputStream.readBytes(0, offsetSubheader, lengthFile).readBytes
 
       val columnName = varsFile(0)
       val compression = findCompressionLiteral(bytesToString(columnName, properties.encoding))
@@ -553,7 +553,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
           offset + intOrLongLength + ColumnNamePointerLength * (i + 1) + ColumnNameLengthOffset)
         val colLength = Seq(ColumnNameTextSubheaderLength, ColumnNameOffsetLength, ColumnNameLengthLength)
 
-        val vars = getBytesFromFile(inputStream, 0, colOffset, colLength).readBytes
+        val vars = inputStream.readBytes(0, colOffset, colLength).readBytes
 
         val textSubheaderIndex = bytesToShort(vars(0), properties.endianness)
         val columnNameOffset = bytesToShort(vars(1), properties.endianness)
@@ -597,7 +597,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
           offset + 2 * intOrLongLength + ColumnTypeOffset + i * (intOrLongLength + 8))
         val attLength = Seq(intOrLongLength, ColumnDataLengthLength, ColumnTypeLength)
 
-        val vars = getBytesFromFile(inputStream, 0, attOffset, attLength).readBytes
+        val vars = inputStream.readBytes(0, attOffset, attLength).readBytes
 
         ColumnAttributes(
           bytesToLong(vars(0), properties.isU64, properties.endianness),
@@ -646,7 +646,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
       val formatLength = Seq(ColumnFormatWidthOffsetLength, ColumnFormatPrecisionOffsetLength, ColumnFormatTextSubheaderIndexLength,
         ColumnFormatOffsetLength, ColumnFormatLengthLength, ColumnLabelTextSubheaderIndexLength, ColumnLabelOffsetLength, ColumnLabelLengthLength)
 
-      val vars = getBytesFromFile(inputStream, 0, formatOffset, formatLength).readBytes
+      val vars = inputStream.readBytes(0, formatOffset, formatLength).readBytes
 
       val columnFormatWidth = bytesToShort(vars(0), properties.endianness)
       val columnFormatPrecision = bytesToShort(vars(1), properties.endianness)
@@ -711,22 +711,12 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
       * @param length the subheader length.
       */
     def processSubheader(inputStream: SasPageReader, properties: SasFileProperties, offset: Long, length: Long, copy: Boolean): SasFileProperties = {
-      val page = getBytesFromFile(inputStream, 0, Seq(offset), Seq(length.toInt)).readBytes
+      val page = inputStream.readBytes(0, Seq(offset), Seq(length.toInt)).readBytes
       val curRow = processByteArrayWithData(page(0), properties, 0, length)
 
       if (copy) properties.setRow(curRow) else SasFileProperties(row = curRow)
     }
   }
-
-  /**
-    * The result of reading bytes from a file
-    *
-    * @param eof         whether the eof file was reached while reading the stream
-    * @param absPosition the absolute position when reading the input stream
-    * @param relPosition the last relative position when reading the input stream
-    * @param readBytes   the matrix of read bytes
-    */
-  case class BytesReadResult(eof: Boolean = false, absPosition: Long = 0L, relPosition: Long = 0L, readBytes: Seq[Seq[Byte]] = Seq())
 
   case class MetadataReadResult(success: Boolean, properties: SasFileProperties)
 
@@ -746,82 +736,6 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
   case class ParseResult(properties: SasFileProperties = null, absPosition: Long = 0L)
 
   case class PageHeader(pageType: Int = 0, blockCount: Int = 0, subheaderCount: Int = 0, eof: Boolean = false)
-
-  def readPage(stream: SasPageReader, properties: SasFileProperties): BytesReadResult =
-    getBytesFromFile(stream, 0L, Seq(0L), Seq(properties.pageLength))
-
-  private def skipStream(stream: SasPageReader, skipTo: Long): Try[Long] = {
-    Success((0L to skipTo).foldLeft(0L)((actuallySkipped, j) => {
-      //println(actuallySkipped)
-      if (actuallySkipped >= skipTo) return Success(actuallySkipped)
-      try
-        actuallySkipped + stream.skip(skipTo - actuallySkipped)
-      catch {
-        case e: IOException => return Failure(throw new IOException(EmptyInputStream))
-        case e: Throwable => return Failure(e)
-      }
-    }))
-  }
-
-  /**
-    * The function to read the list of bytes arrays from the sas7bdat file. The array of offsets and the array of
-    * lengths serve as input data that define the location and number of bytes the function must read.
-    *
-    * @param offset the array of offsets.
-    * @param length the array of lengths.
-    * @return the list of bytes arrays.
-    * @throws IOException if reading from the { @link SasFileParser#sasFileStream} stream is impossible.
-    */
-  @throws[IOException]
-  def getBytesFromFile(page: Seq[Byte], offset: Seq[Long], length: Seq[Int]): Seq[Seq[Byte]] = {
-    offset.iterator.map(i => {
-      val curOffset = offset(i.toInt).toInt
-
-      if (page.length < curOffset) throw new IOException(EmptyInputStream)
-      page.slice(curOffset, curOffset + length(i.toInt))
-    }).toSeq
-  }
-
-  /**
-    * The function to read the list of bytes arrays from the sas7bdat file. The array of offsets and the array of
-    * lengths serve as input data that define the location and number of bytes the function must read.
-    *
-    * @param offset the array of offsets.
-    * @param length the array of lengths.
-    * @param rewind rewind the input stream to the same location as before the read
-    * @return the list of bytes arrays.
-    * @throws IOException if reading from the { @link SasFileParser#sasFileStream} stream is impossible.
-    */
-  @throws[IOException]
-  def getBytesFromFile(fileStream: SasPageReader, position: Long, offset: Seq[Long], length: Seq[Int], rewind: Boolean = true): BytesReadResult = {
-
-    if (rewind)
-      fileStream.mark(Int.MaxValue)
-
-    val res = (0L until offset.length).foldLeft(BytesReadResult(relPosition = position))((acc: BytesReadResult, i: Long) => {
-      skipStream(fileStream, offset(i.toInt) - acc.relPosition).get
-      // println(acc.lastPosition)
-      val temp = new Array[Byte](length(i.toInt))
-
-      val eof = Try(fileStream.read(temp, 0, length(i.toInt))) match {
-        case Success(_) => false
-        case Failure(e) => e match {
-          case _: EOFException => true
-          case _ => false
-        }
-      }
-
-      val lastRelPosition = offset(i.toInt) + length(i.toInt).toLong
-
-      //todo: remove that asInstanceOf, required since intelij has some parsing bug
-      BytesReadResult(eof.asInstanceOf[Boolean], acc.relPosition + lastRelPosition, lastRelPosition, acc.readBytes :+ temp.toSeq)
-    })
-
-    if (rewind)
-      fileStream.reset()
-
-    res
-  }
 
   /**
     * The method to validate sas7bdat file. If sasFileProperties contains an encoding value other than
@@ -847,7 +761,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
 
     val offsetForAlign = Seq(Align1Offset, Align2Offset)
     val lengthForAlign = Seq(Align1Length, Align2Length)
-    val resU64 = getBytesFromFile(fileStream, 0, offsetForAlign, lengthForAlign, false)
+    val resU64 = fileStream.readBytes(0, offsetForAlign, lengthForAlign, false)
 
     val isU64: Boolean = resU64.readBytes(0)(0) == U64ByteCheckerValue
     val align1 = if (resU64.readBytes(1)(0) == Align1CheckerValue) Align1Value else 0
@@ -866,7 +780,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
       SasReleaseLength, SasServerTypeLength, OsVersionNumberLength,
       OsMarkerLength, OsNameLength)
 
-    val res = getBytesFromFile(fileStream, resU64.relPosition, offset, length, false)
+    val res = fileStream.readBytes(resU64.relPosition.get, offset, length, false)
 
     val endianeness = res.readBytes(0)(0)
 
@@ -889,9 +803,8 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
       bytesToInt(res.readBytes(7), endianeness), bytesToLong(res.readBytes(8), isU64, endianeness)
     )
 
-    //Move the file stream to the end of the header
     if (fileStream != null)
-      skipStream(fileStream, properties.headerLength - res.relPosition).get
+      fileStream.moveToEndOfHeader(properties, res).get
 
     ParseResult(properties, properties.headerLength)
   }
@@ -907,7 +820,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
     val bitOffset = getBitOffset(properties)
     val offset = Seq(bitOffset + PAGE_TYPE_OFFSET, bitOffset + BLOCK_COUNT_OFFSET, bitOffset + SUBHEADER_COUNT_OFFSET)
     val length = Seq(PAGE_TYPE_LENGTH, BLOCK_COUNT_LENGTH, SUBHEADER_COUNT_LENGTH)
-    val vars = getBytesFromFile(fileStream, 0, offset, length)
+    val vars = fileStream.readBytes(0, offset, length)
 
     val pageType = bytesToShort(vars.readBytes(0), properties.endianness)
     val pageBlockCount = bytesToShort(vars.readBytes(1), properties.endianness)
@@ -1013,7 +926,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
       if (res.success)
         res.properties
       else {
-        skipStream(fileStream, metaResults.properties.pageLength).get
+        fileStream.cachePage(metaResults.properties).get
         val newPageHeader = readPageHeader(fileStream, metaResults.properties)
         val newRes = processSasFilePageMeta(fileStream, SasMetadata(newPageHeader, metaResults.properties))
         iterateThroughPages(stream, newRes)
@@ -1164,7 +1077,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
     val offsetMass = Seq(pointerOffset)
     val lengthMass = Seq(intOrLongLength)
 
-    val res = getBytesFromFile(fileStream, 0, offsetMass, lengthMass)
+    val res = fileStream.readBytes(0, offsetMass, lengthMass)
 
     bytesToLong(res.readBytes(0), properties.isU64, properties.endianness)
   }
@@ -1209,7 +1122,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
     val offset = Seq(totalOffset, totalOffset + intOrLongLength, totalOffset + 2L * intOrLongLength, totalOffset + 2L * intOrLongLength + 1)
     val length = Seq(intOrLongLength, intOrLongLength, 1, 1)
 
-    val vars = getBytesFromFile(fileStream, 0, offset, length).readBytes
+    val vars = fileStream.readBytes(0, offset, length).readBytes
 
     val subheaderOffset = bytesToLong(vars(0), properties.isU64, properties.endianness)
     val subheaderLength = bytesToLong(vars(1), properties.isU64, properties.endianness)
@@ -1307,7 +1220,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
         val offset = bitOffset + SubheaderPointersOffset + alignCorrection +
           meta.pageHeader.subheaderCount * subheaderPointerLength + currentRowOnPageIndex * meta.properties.rowLength
 
-        val page = getBytesFromFile(fileStream, 0, Seq(offset), Seq(meta.properties.pageLength)).readBytes
+        val page = fileStream.readBytes(0, Seq(offset), Seq(meta.properties.pageLength)).readBytes
         val row = processByteArrayWithData(page(0), meta.properties, 0L, meta.properties.rowLength)
 
         if (currentRowOnPageIndex == Math.min(meta.properties.rowCount, meta.properties.mixPageRowCount))
@@ -1318,7 +1231,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
       case PageDataType => {
         val offset = bitOffset + SubheaderPointersOffset + currentRowOnPageIndex * meta.properties.rowLength
 
-        val page = getBytesFromFile(fileStream, 0, Seq(offset), Seq(meta.properties.pageLength)).readBytes
+        val page = fileStream.readBytes(0, Seq(offset), Seq(meta.properties.pageLength)).readBytes
         val row = processByteArrayWithData(page(0), meta.properties, 0L, meta.properties.rowLength)
 
         if (currentRowOnPageIndex == meta.pageHeader.blockCount)
@@ -1357,7 +1270,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
   @throws[IOException]
   private def processNextPage(inputStream: SasPageReader, properties: SasFileProperties): SasMetadata = {
 
-    skipStream(inputStream, properties.pageLength).get
+    inputStream.cachePage(properties).get
     val page = readPageHeader(inputStream, properties)
 
     if ((page.pageType == PageMetaType1) || (page.pageType == PageMetaType2) || (page.pageType == PageAmdType))

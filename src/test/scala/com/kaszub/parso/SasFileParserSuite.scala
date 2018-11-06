@@ -64,10 +64,13 @@ class SasFileParserSuite extends FlatSpec with SasFileConstants {
   private def NoCompressionFileNameStream: SasPageReader = SasPageReader(new BufferedInputStream(
     Thread.currentThread.getContextClassLoader.getResourceAsStream(NoCompressionFileName)))
 
-  private def ColonFileNameStream: SasPageReader = SasPageReader(new BufferedInputStream(
+  private def ColonFileNameStream: SasPageReader = SasCachedPageReader(new BufferedInputStream(
     Thread.currentThread.getContextClassLoader.getResourceAsStream(ColonFileName)))
 
   private def MixedDataFileStream: SasPageReader = SasPageReader(new BufferedInputStream(
+    Thread.currentThread.getContextClassLoader.getResourceAsStream(MixedDataFileName)))
+
+  private def MixedDataCachedFileStream: SasPageReader = SasCachedPageReader(new BufferedInputStream(
     Thread.currentThread.getContextClassLoader.getResourceAsStream(MixedDataFileName)))
 
 
@@ -77,22 +80,17 @@ class SasFileParserSuite extends FlatSpec with SasFileConstants {
     val offsetForAlign = Seq(Align1Offset, Align2Offset)
     val lengthForAlign = Seq(Align1Length, Align2Length)
 
-    val res = SasFileParser.getBytesFromFile(inputStream, 0, offsetForAlign, lengthForAlign, false)
+    val res = inputStream.readBytes(0, offsetForAlign, lengthForAlign, false)
     val eof = res.eof
     val vars = res.readBytes
 
     assert(!eof)
-    assert(res.relPosition == offsetForAlign(1) + lengthForAlign(1))
-    assert(res.absPosition == offsetForAlign(0) + lengthForAlign(0) + offsetForAlign(1) + lengthForAlign(1))
+    assert(res.relPosition.get == offsetForAlign(1) + lengthForAlign(1))
+    assert(res.absPosition.get == offsetForAlign(0) + lengthForAlign(0) + offsetForAlign(1) + lengthForAlign(1))
     assert(vars(0)(0).toHexString == "22")
     assert(vars(1)(0).toHexString == "32")
 
     inputStream.close()
-  }
-
-  it should "return the proper bytes given a previously parsed page" in {
-    ???
-    //val is = getResourceAsStream("sas7bdat/mixed_data_one.sas7bdat")
   }
 
   "Checking if a sas file is valid" should "return the proper validity" in {
@@ -190,10 +188,10 @@ class SasFileParserSuite extends FlatSpec with SasFileConstants {
     assert(res.properties.headerLength == 1024)
 
     val expected =
-      SasFileParser.getBytesFromFile(file2, 0, Seq(res.properties.headerLength.toLong), Seq(30), false).readBytes
+      file2.readBytes(0, Seq(res.properties.headerLength.toLong), Seq(30), false).readBytes
 
     val result =
-      SasFileParser.getBytesFromFile(file1, 0, Seq(0L), Seq(30), false).readBytes
+      file1.readBytes(0, Seq(0L), Seq(30), false).readBytes
 
     assert(result == expected)
 
@@ -467,18 +465,27 @@ class SasFileParserSuite extends FlatSpec with SasFileConstants {
     file.close()
   }
 
-  it should "read all rows when reading compressed data" in {
-    val file = MixedDataFileStream
-
+  private def runReadAllMixedDataTest(file: SasPageReader, isUsingCacheValue: Boolean): Unit = {
     val meta = SasFileParser.getMetadataFromSasFile(file)
     val rows = SasFileParser.readAll(file, meta)
 
     assert(rows.size == meta.properties.rowCount)
     assert(rows(0)(2) == Some("AAAAAAAA"))
+    assert(file.isUsingCache == isUsingCacheValue)
 
     file.close()
   }
 
+  it should "read all rows when reading compressed data" in {
+    for (i <- 0 to 10) {
+      runReadAllMixedDataTest(MixedDataFileStream, false)
+    } //52,448 ; 1,118
+  }
 
+  it should "read all rows when reading compressed data with a cached reader" in {
+    for (i <- 0 to 10) {
+      runReadAllMixedDataTest(MixedDataCachedFileStream, true)
+    } //40,147; 0,976 => 23,4%; 12,7% faster
+  }
 
 }
