@@ -47,13 +47,13 @@ object CharDecompressor extends Decompressor {
           resBytes = resBytes ++ Seq.fill(copyCounter + 18)(page(offset + currentByteIndex + 2))
           currentByteIndex += 2
         case 0x50 =>
-          resBytes = resBytes ++ Seq.fill(endOfFirstByte * 256 + (page(offset + currentByteIndex + 1) & 0xFF) + 17)(0x40)
+          resBytes = resBytes ++ Seq.fill[Byte](endOfFirstByte * 256 + (page(offset + currentByteIndex + 1) & 0xFF) + 17)(0x40)
           currentByteIndex += 1
         case 0x60 =>
-          resBytes = resBytes ++ Seq.fill(endOfFirstByte * 256 + (page(offset + currentByteIndex + 1) & 0xFF) + 17)(0x20)
+          resBytes = resBytes ++ Seq.fill[Byte](endOfFirstByte * 256 + (page(offset + currentByteIndex + 1) & 0xFF) + 17)(0x20)
           currentByteIndex += 1
         case 0x70 =>
-          resBytes = resBytes ++ Seq.fill(endOfFirstByte * 256 + (page(offset + currentByteIndex + 1) & 0xFF) + 17)(0x00)
+          resBytes = resBytes ++ Seq.fill[Byte](endOfFirstByte * 256 + (page(offset + currentByteIndex + 1) & 0xFF) + 17)(0x00)
           currentByteIndex += 1
         case 0x80 | 0x90 | 0xA0 | 0xB0 =>
           val countOfBytesToCopy = Math.min(endOfFirstByte + 1 + (controlByte - 0x80), length - (currentByteIndex + 1))
@@ -63,11 +63,11 @@ object CharDecompressor extends Decompressor {
           resBytes = resBytes ++ Seq.fill(endOfFirstByte + 3)(page(offset + currentByteIndex + 1))
           currentByteIndex += 1
         case 0xD0 =>
-          resBytes = resBytes ++ Seq.fill(endOfFirstByte + 2)(0x40)
+          resBytes = resBytes ++ Seq.fill[Byte](endOfFirstByte + 2)(0x40)
         case 0xE0 =>
-          resBytes = resBytes ++ Seq.fill(endOfFirstByte + 2)(0x20)
+          resBytes = resBytes ++ Seq.fill[Byte](endOfFirstByte + 2)(0x20)
         case 0xF0 =>
-          resBytes = resBytes ++ Seq.fill(endOfFirstByte + 2)(0x00)
+          resBytes = resBytes ++ Seq.fill[Byte](endOfFirstByte + 2)(0x00)
         case _ =>
           logger.error("Error control byte: %s".format(controlByte))
       }

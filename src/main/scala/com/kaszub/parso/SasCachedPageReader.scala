@@ -64,6 +64,8 @@ class SasCachedPageReader(input: InputStream) extends SasPageReader(input) {
     cachePage(properties)
   }
 
+  override def isParallelizable: Boolean = true
+
 }
 
 object SasCachedPageReader {

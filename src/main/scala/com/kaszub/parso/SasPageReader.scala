@@ -105,6 +105,8 @@ class SasPageReader(private val inputStream: InputStream) extends InputStream {
   override def reset(): Unit = inputStream.reset()
 
   override def markSupported(): Boolean = inputStream.markSupported()
+
+  def isParallelizable: Boolean = false
 }
 
 object SasPageReader {

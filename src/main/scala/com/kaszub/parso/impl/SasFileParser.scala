@@ -8,8 +8,8 @@ import com.kaszub.parso.impl.SasFileParser.SubheaderIndexes.SubheaderIndexes
 import com.kaszub.parso._
 import com.typesafe.scalalogging.Logger
 
+import scala.collection.parallel.CollectionConverters._
 import scala.io.Source
-import scala.util.{Failure, Success, Try}
 
 case class SasFileParser private(val sasFileStream: BufferedInputStream = null,
                                  encoding: String = null,
@@ -1022,21 +1022,29 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
       PageMetadataReadResult(subheaderIndex, pointer, getNewProperties(subheaderIndex, pointer, curProperties, cond(subheaderIndex)))
     }
 
-    //parallizable
-    def processHeaders(curProperties: SasFileProperties, filter: Option[SubheaderIndexes] => Boolean): Seq[PageMetadataReadResult] = {
-      (0 until meta.pageHeader.subheaderCount).map(i => {
+    def processHeaders(curProperties: SasFileProperties, filter: Option[SubheaderIndexes] => Boolean,
+                       runInParallel: Boolean = true): Stream[PageMetadataReadResult] = {
+      val range = 0 until meta.pageHeader.subheaderCount
+      val processFunc = {i: Int => {
         val subheaderPointer = readSubheaderPointer(fileStream, curProperties, i)
 
         if (subheaderPointer.compression != TruncatedSubheaderId)
           process(subheaderPointer, curProperties, filter)
         else
           PageMetadataReadResult(None, subheaderPointer, curProperties)
-      })
+      }}
+
+      if (fileStream.isParallelizable && runInParallel)
+        range.par.map(processFunc).toStream
+      else
+        range.iterator.map(processFunc).toStream
+
     }
 
-    //Handle the column text subheader first since it is a dependency to others
+    //Handle the column text subheader first since it is a dependency to others; since it's one of the first headers it
+    //makes no sense to search for it in parallel
     val colTextSubheader =
-      processHeaders(meta.properties, _ == Some(SubheaderIndexes.ColumnTextSubheaderIndex)).
+      processHeaders(meta.properties, _ == Some(SubheaderIndexes.ColumnTextSubheaderIndex), false).
         find(_.subheaderIndex == Some(SubheaderIndexes.ColumnTextSubheaderIndex))
 
     val adjProperties = {
@@ -1054,7 +1062,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
 
     //todo: Sort the results since they can be read in parallel
 
-    val col = results.groupBy(_.subheaderIndex) //(_.properties)
+    val col = results.groupBy(_.subheaderIndex)
 
     col.keys.map(key => key match {
       case Some(SubheaderIndexes.DataSubheaderIndex) =>
@@ -1178,6 +1186,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
               return acc
           }
         }
+        if (total % 10000 == 0) logger.info("Total Records processed: %s".format(i))
         if (res.lastRow && total < meta.properties.rowCount - 1)
           read(total + 1, 0, readNextPage(fileStream, curMeta.properties), acc :+ res.row)
         else
