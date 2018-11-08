@@ -472,7 +472,7 @@ class SasFileParserSuite extends FlatSpec with SasFileConstants {
     val rows = SasFileParser.readAll(file, meta)
 
     assert(rows.size == meta.properties.rowCount)
-    //assert(rows(0)(2) == Some("AAAAAAAA"))
+    assert(rows(0)(2) == Some("AAAAAAAA"))
     assert(file.isUsingCache == isUsingCacheValue)
 
     file.close()
@@ -485,9 +485,13 @@ class SasFileParserSuite extends FlatSpec with SasFileConstants {
   }
 
   it should "read all rows when reading compressed data with a cached reader" in {
-    //for (i <- 0 to 10) {
-      runReadAllMixedDataTest(IFRS9DataFileStream, false)
-    //} //34,7; 40,147; 0,976; 0,788 => 6%; 23,4%; 12,7%; 19,2% faster
+    for (i <- 0 to 10) {
+      runReadAllMixedDataTest(MixedDataCachedFileStream, true)
+    } //34,7; 40,147; 0,976; 0,788 => 6%; 23,4%; 12,7%; 19,2% faster
+  }
+
+  it should "read all ifrs 9 rows when reading compressed data with a cached reader" ignore {
+      runReadAllMixedDataTest(IFRS9DataFileStream, true)
   }
 
   "Processing the file in parallel" should "match with the non parallel read" in {
