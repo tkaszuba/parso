@@ -6,10 +6,10 @@ import java.time.{Instant, ZoneOffset, ZonedDateTime}
 
 import com.kaszub.parso.impl.SasFileParser.SubheaderIndexes.SubheaderIndexes
 import com.kaszub.parso._
-import com.kaszub.parso.impl.SasFileParser.readNextPage
 import com.sun.net.httpserver.Authenticator
 import com.typesafe.scalalogging.Logger
 
+import scala.annotation.tailrec
 import scala.collection.parallel.CollectionConverters._
 import scala.io.Source
 import scala.util.{Failure, Success, Try}
@@ -715,7 +715,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
       */
     def processSubheader(inputStream: SasPageReader, properties: SasFileProperties, offset: Long, length: Long, copy: Boolean): SasFileProperties = {
       val page = inputStream.readBytes(0, Seq(offset), Seq(length.toInt)).readBytes
-      val curRow = processByteArrayWithData(page(0), properties, 0, length)
+      val curRow = processByteArrayWithData(page.head, properties, 0, length)
 
       if (copy) properties.setRow(curRow) else SasFileProperties(row = curRow)
     }
@@ -902,12 +902,11 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
         Some(bytes)
       else {
         try
-            if (bytes.isEmpty) None else Some(bytesToString(bytes, properties.encoding))
+            if (bytes.nonEmpty) Some(bytesToString(bytes, properties.encoding)) else None
         catch {
-          case e: UnsupportedEncodingException => {
+          case e: UnsupportedEncodingException =>
             logger.error(e.getMessage, e)
             None
-          }
         }
       }
     }
@@ -934,6 +933,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
     val metaResults = processSasFilePageMeta(fileStream, SasMetadata(pageHeader, fileHeader.properties))
 
     //todo: merge with process next page
+    @tailrec
     def iterateThroughPages(stream: SasPageReader, res: MetadataReadResult): SasFileProperties = {
       if (res.success)
         res.properties
@@ -968,7 +968,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
         Map()
 
     val propertiesNew =
-      if (!res.isEmpty) {
+      if (res.nonEmpty) {
         meta.properties.copy(
           rowLength = res.getOrElse(Some(SubheaderIndexes.RowSizeSubheaderIndex), Seq(meta.properties)).head.rowLength,
           rowCount = res.getOrElse(Some(SubheaderIndexes.RowSizeSubheaderIndex), Seq(meta.properties)).head.rowCount,
@@ -1099,7 +1099,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
 
     val res = fileStream.readBytes(0, offsetMass, lengthMass)
 
-    bytesToLong(res.readBytes(0), properties.isU64, properties.endianness)
+    bytesToLong(res.readBytes.head, properties.isU64, properties.endianness)
   }
 
   /**
@@ -1162,18 +1162,16 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
     */
   private def findCompressionLiteral(src: String): Option[String] = {
     src match {
-      case null => {
+      case null =>
         logger.warn(NullCompressionLiteral)
         None
-      }
-      case _ => {
+      case _ =>
         LiteralsToDecompressor.keySet.foreach(compressor =>
           if (src.contains(compressor))
             return Some(compressor)
         )
         logger.debug(NoSupportedCompressionLiteral)
         None
-      }
     }
   }
 
@@ -1186,49 +1184,47 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
     */
   def readAll(fileStream: SasPageReader, meta: SasMetadata): Seq[Seq[Option[Any]]] = {
 
-    def processPage(curMeta: SasMetadata): Seq[(Int, Try[PageRowReadResult])] = {
+    def processPage(curMeta: SasMetadata): Seq[Try[PageRowReadResult]] = {
       val processFunc = {i: Int => {
         try {
           (i, Success(readNext(fileStream, curMeta, i)))
         }
         catch {
-          case e: Throwable => (i, Failure(e))
+          case e: Throwable =>
+            (i, Failure(new RuntimeException("Exception encountered when reading row %s on page".format(i), e)))
         }
       }}
 
       if (fileStream.isParallelizable)
-        (0 until curMeta.getPageRows).par.map(processFunc).toStream.sortBy(_._1)
+        (0 until curMeta.getPageRows).par.map(processFunc).toStream.sortBy(_._1).map(_._2)
       else
-        (0 until curMeta.getPageRows).map(processFunc).toStream
+        (0 until curMeta.getPageRows).map(processFunc.andThen(_._2)).toStream
     }
 
+    @tailrec
     def read(total: Long, curMeta: SasMetadata, acc: Seq[Seq[Option[Any]]]): Seq[Seq[Option[Any]]] = {
 
       if (total < meta.properties.rowCount) {
 
-        val processRes = processPage(curMeta)
-        val failedRead = processRes.find(_._2.isFailure)
+        //intelij bug, need to declare the partitioning func first
+        val funcPart: Try[Any] => Boolean = {e:Try[Any] => e match {case Success(_) => true case _ => false}}
+        val processRes = processPage(curMeta).partition(funcPart)
 
-        val res = {
-          if (failedRead.isDefined) {
-            failedRead match {
-              case Some((index, e)) =>
-                logger.warn("Exception encountered, skipping the rest of the file. " +
-                  "Rows read on page: " + index + ". Expected number of rows from metadata: " + meta.properties.rowCount, e.failed.get)
-                return acc ++ processRes.slice(0, index).map(_._2.get.row)
-              case _ => processRes.map(_._2.get)
-            }
-          }
-          else
-            processRes.map(_._2.get)
+        val res = processRes._1.map(_.get.row)
+
+        if (processRes._2.nonEmpty){
+          logger.warn("Exception encountered, skipping the rest of the file. " +
+            "Rows processed : " + (total + res.size) +
+            ". Expected number of rows from metadata: " + meta.properties.rowCount, processRes._2.head.get)
+          return acc ++ res
         }
 
         logger.info("Total Records processed: %s".format(total))
 
         if (total < meta.properties.rowCount - 1)
-          read(total + res.size, readNextPage(fileStream, curMeta.properties), acc ++ res.map(_.row))
+          read(total + res.size, readNextPage(fileStream, curMeta.properties), acc ++ res)
         else
-          acc ++ res.map(_.row)
+          acc ++ res
       }
       else
         acc
@@ -1240,46 +1236,44 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
   /**
     * The function to read next row from current sas7bdat file.
     *
-    * @param columnNames list of column names which should be processed.
-    * @return the object array containing elements of current row.
-    * @throws IOException if reading from the { @link SasFileParser#sasFileStream} stream is impossible.
+    * @param meta The Sas metadat which should be used for reference
+    * @param meta Which row to process on the current page
+    * @return the result of the page read row opertaion
+    * @throws IOException if reading from the {@link SasFileParser#sasFileStream} stream is impossible.
     */
   @throws[IOException]
   def readNext(fileStream: SasPageReader, meta: SasMetadata, currentRowOnPageIndex: Int = 0): PageRowReadResult = {
     def isLastRowOnPage(index: Int = 0, meta: SasMetadata): Boolean = index == meta.getPageRows
 
-    if (meta.pageHeader.eof) return PageRowReadResult(Seq(), true)
+    if (meta.pageHeader.eof) return PageRowReadResult(Seq(), lastRow = true)
     val bitOffset = getBitOffset(meta.properties)
 
     meta.pageHeader.pageType match {
-      case PageMetaType1 | PageMetaType2 => {
-        require(!meta.properties.dataSubheaderPointers.isEmpty, "The data subheader pointers can't be missing")
+      case PageMetaType1 | PageMetaType2 =>
+        require(meta.properties.dataSubheaderPointers.nonEmpty, "The data subheader pointers can't be missing")
         val dataSubheaderPointer = meta.properties.dataSubheaderPointers(currentRowOnPageIndex)
         //Assumes that the file stream is at the beginning of the page
         val row = subheaderIndexToClass(SubheaderIndexes.DataSubheaderIndex).
           processSubheader(fileStream, meta.properties, dataSubheaderPointer.offset, dataSubheaderPointer.length, false).row
 
         PageRowReadResult(row, isLastRowOnPage(currentRowOnPageIndex, meta))
-      }
-      case PageMixType => {
+      case PageMixType =>
         val subheaderPointerLength = getSubheaderPointerLength(meta.properties)
         val alignCorrection = (bitOffset + SubheaderPointersOffset + meta.pageHeader.subheaderCount * subheaderPointerLength) % BitsInByte
         val offset = bitOffset + SubheaderPointersOffset + alignCorrection +
           meta.pageHeader.subheaderCount * subheaderPointerLength + currentRowOnPageIndex * meta.properties.rowLength
 
         val page = fileStream.readBytes(0, Seq(offset), Seq(meta.properties.pageLength)).readBytes
-        val row = processByteArrayWithData(page(0), meta.properties, 0L, meta.properties.rowLength)
+        val row = processByteArrayWithData(page.head, meta.properties, 0L, meta.properties.rowLength)
 
         PageRowReadResult(row, isLastRowOnPage(currentRowOnPageIndex, meta))
-      }
-      case PageDataType => {
+      case PageDataType =>
         val offset = bitOffset + SubheaderPointersOffset + currentRowOnPageIndex * meta.properties.rowLength
 
         val page = fileStream.readBytes(0, Seq(offset), Seq(meta.properties.pageLength)).readBytes
-        val row = processByteArrayWithData(page(0), meta.properties, 0L, meta.properties.rowLength)
+        val row = processByteArrayWithData(page.head, meta.properties, 0L, meta.properties.rowLength)
 
         PageRowReadResult(row, isLastRowOnPage(currentRowOnPageIndex, meta))
-      }
     }
   }
 
@@ -1293,6 +1287,7 @@ object SasFileParser extends ParserMessageConstants with SasFileConstants {
     * @throws IOException if reading from the { @link SasFileParser#sasFileStream} stream is impossible.
     */
   @throws[IOException]
+  @tailrec
   def readNextPage(inputStream: SasPageReader, properties: SasFileProperties): SasMetadata = {
     val meta = processNextPage(inputStream, properties)
 
